@@ -1,0 +1,94 @@
+body {
+    background-color: #f8f9fa;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Dashboard Header Row */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Buttons Group at Top */
+.dashboard-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+/* Tables */
+.table th {
+    background-color: #f2f2f2;
+}
+
+/* Alerts */
+.alert {
+    margin-top: 20px;
+}
+
+/* Buttons */
+.btn {
+    margin-right: 5px;
+    border-radius: 6px;
+}
+
+/* Improve Success Button (Send Attendance) */
+.btn-success {
+    font-weight: 500;
+    padding: 6px 14px;
+}
+
+/* Improve Warning Button (Disputes / Restore) */
+.btn-warning {
+    font-weight: 500;
+}
+
+/* Improve Primary Button */
+.btn-primary {
+    font-weight: 500;
+}
+
+/* List Group */
+.list-group-item {
+    transition: background-color 0.3s, transform 0.2s;
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+/* Badge Styling */
+.badge {
+    font-size: 0.9em;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
+
+/* Attendance Stats Boxes */
+.row.text-center .col-2 {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Footer */
+footer {
+    margin-top: 50px;
+    padding: 20px 0;
+    color: #6c757d;
+    text-align: center;
+}

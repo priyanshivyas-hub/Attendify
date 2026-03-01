@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Professor Dashboard{% endblock %}
+{% block content %}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2>Professor Dashboard</h2>
+    </div>
+
+    <div class="col-auto d-flex gap-2">
+
+        <form action="{{ url_for('send_attendance_report') }}" method="post">
+            <button type="submit" class="btn btn-success">
+                Send Today's Attendance to Admin
+            </button>
+        </form>
+
+        <a href="/professor/disputes" class="btn btn-warning">
+            View Disputes
+            {% if pending_count > 0 %}
+                <span class="badge bg-danger">{{ pending_count }}</span>
+            {% endif %}
+        </a>
+
+    </div>
+</div>
+
+<div class="row">
+
+<!-- ================= TODAY'S CLASSES ================= -->
+<div class="col-md-6 mb-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Today's Classes</h5>
+        </div>
+        <div class="card-body">
+
+            {% if today_classes %}
+                {% for class in today_classes %}
+                <div class="card mb-3">
+                    <div class="card-body">
+
+                        <h6>
+                            {{ class.course_code }} - {{ class.course_name }}
+                            <small class="text-muted">
+                                {{ class.start_time.strftime('%H:%M') }} -
+                                {{ class.end_time.strftime('%H:%M') }}
+                            </small>
+                        </h6>
+
+                        <p>Room: {{ class.room }}</p>
+
+                        <div class="row text-center mb-2">
+                            <div class="col bg-success text-white p-1 rounded">
+                                P: {{ class.present }}
+                            </div>
+                            <div class="col bg-danger text-white p-1 rounded">
+                                A: {{ class.absent }}
+                            </div>
+                            <div class="col bg-warning text-white p-1 rounded">
+                                L: {{ class.late }}
+                            </div>
+                            <div class="col bg-info text-white p-1 rounded">
+                                E: {{ class.excused }}
+                            </div>
+                            <div class="col bg-secondary text-white p-1 rounded">
+                                Total: {{ class.total_students }}
+                            </div>
+                        </div>
+
+                        <a href="{{ url_for('class_attendance', instance_id=class.instance_id) }}"
+                           class="btn btn-sm btn-primary">
+                            Mark/Edit
+                        </a>
+
+                        <!-- Cancel Class -->
+                        <form method="POST"
+                              action="{{ url_for('cancel_class', instance_id=class.instance_id) }}"
+                              class="mt-2">
+                            <input type="text"
+                                   name="reason"
+                                   class="form-control form-control-sm mb-2"
+                                   placeholder="Reason for cancellation"
+                                   required>
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Cancel this class?')">
+                                Cancel Class
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No classes scheduled for today</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= CANCELLED TODAY ================= -->
+<div class="col-md-6 mb-4">
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Cancelled Classes Today</h5>
+        </div>
+        <div class="card-body">
+
+            {% if cancelled_today %}
+                {% for class in cancelled_today %}
+                <div class="card mb-2 border-secondary">
+                    <div class="card-body">
+
+                        <h6>{{ class.course_code }} - {{ class.course_name }}</h6>
+                        <p>
+                            {{ class.start_time.strftime('%H:%M') }} -
+                            {{ class.end_time.strftime('%H:%M') }},
+                            Room {{ class.room }}
+                        </p>
+
+                        <p class="text-muted">
+                            Reason: {{ class.cancellation_reason or 'Not specified' }}
+                        </p>
+
+                        <form method="POST"
+                              action="{{ url_for('restore_class', instance_id=class.instance_id) }}">
+                            <button type="submit"
+                                    class="btn btn-warning btn-sm">
+                                Restore
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No cancelled classes today</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+</div>
+
+
+<!-- UPCOMING CLASSES (Next 7 Days) -->
+<div class="col-md-6 mb-4">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Upcoming Classes (Next 7 Days)</h5>
+        </div>
+        <div class="card-body">
+
+            {% if upcoming_classes %}
+                {% for class in upcoming_classes %}
+                <div class="card mb-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+
+                        <div>
+                            <h6 class="mb-1">
+                                {{ class.course_code }} - {{ class.course_name }}
+                            </h6>
+                            <small>
+                                {{ class.class_date.strftime('%d %b %Y') }}
+                                {{ class.start_time.strftime('%H:%M') }},
+                                {{ class.day_name }},
+                                Room {{ class.room }}
+                            </small>
+                        </div>
+
+                        <div>
+                            <form method="POST"
+                                  action="{{ url_for('cancel_class', instance_id=class.instance_id) }}"
+                                  class="d-flex gap-2">
+
+                                <input type="text"
+                                       name="reason"
+                                       class="form-control form-control-sm"
+                                       placeholder="Reason"
+                                       required>
+
+                                <button type="submit"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Cancel this class?')">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No upcoming classes</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+<!-- CANCELLED UPCOMING CLASSES -->
+<div class="col-md-6 mb-4">
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Cancelled Upcoming Classes</h5>
+        </div>
+        <div class="card-body">
+
+            {% if cancelled_upcoming %}
+                {% for class in cancelled_upcoming %}
+                <div class="card mb-2 border-secondary">
+                    <div class="card-body">
+
+                        <h6>{{ class.course_code }} - {{ class.course_name }}</h6>
+                        <p class="mb-1">
+                            {{ class.class_date.strftime('%d %b %Y') }}
+                            {{ class.start_time.strftime('%H:%M') }},
+                            {{ class.day_name }},
+                            Room {{ class.room }}
+                        </p>
+                        <p class="text-muted">
+                            Reason: {{ class.cancellation_reason or 'Not specified' }}
+                        </p>
+
+                        <form method="POST"
+                              action="{{ url_for('restore_class', instance_id=class.instance_id) }}">
+                            <button type="submit"
+                                    class="btn btn-warning btn-sm">
+                                Restore
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No cancelled upcoming classes</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= COURSE SUMMARY ================= -->
+<div class="row mt-4">
+<div class="col">
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Course Summary</h5>
+        </div>
+        <div class="card-body">
+
+            {% if course_summary %}
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Total Lectures</th>
+                        <th>Held</th>
+                        <th>Cancelled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cs in course_summary %}
+                    <tr>
+                        <td>{{ cs.course_code }}</td>
+                        <td>{{ cs.total_lectures }}</td>
+                        <td>{{ cs.held_so_far }}</td>
+                        <td>{{ cs.cancelled }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted mb-0">No course data available</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+</div>
+
+{% endblock %}

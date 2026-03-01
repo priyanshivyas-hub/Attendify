@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Professor Locations{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <!-- 🔥 Gradient Page Header -->
+    <div class="p-4 mb-4 rounded-4 shadow-sm"
+         style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white;">
+        <h2 class="fw-bold mb-1">Professor Live Locations</h2>
+        <p class="mb-0 opacity-75">Track availability in real-time</p>
+    </div>
+
+    <!-- 🔎 Search Bar -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <input type="text"
+                   id="searchInput"
+                   class="form-control form-control-lg rounded-pill px-4"
+                   placeholder="🔍 Search professor..."
+                   onkeyup="filterTable()">
+        </div>
+    </div>
+
+    <!-- 💎 Modern Table -->
+    <div class="card border-0 shadow rounded-4 overflow-hidden">
+
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+
+                <!-- 🟣 Modern Column Header -->
+                <thead style="background-color:#f1f5ff; color:#2a2a2a;">
+                    <tr>
+                        <th class="ps-4">Name</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Location</th>
+                        <th>Notes</th>
+                        <th class="pe-4">Updated</th>
+                    </tr>
+                </thead>
+
+                <tbody id="profTable">
+                    {% for prof in professors %}
+                    <tr class="modern-row">
+
+                        <td class="ps-4 fw-semibold">
+                            {{ prof.full_name }}
+                        </td>
+
+                        <td>
+                            <span class="dept-pill">
+                                {{ prof.department }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if prof.status == "Free" %}
+                                <span class="status-pill free">Free</span>
+                            {% elif prof.status == "Busy" %}
+                                <span class="status-pill busy">Busy</span>
+                            {% elif prof.status == "In Class" %}
+                                <span class="status-pill class">In Class</span>
+                            {% else %}
+                                <span class="status-pill default">
+                                    {{ prof.status or "Not Updated" }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ prof.building or "-" }} {{ prof.room or "" }}
+                        </td>
+
+                        <td class="text-muted">
+                            {{ prof.notes or "-" }}
+                        </td>
+
+                        <td class="text-muted pe-4">
+                            {% if prof.minutes_since_update is not none %}
+                                {{ prof.minutes_since_update }} mins ago
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+/* Table Row Modern Hover */
+.modern-row {
+    transition: all 0.2s ease;
+}
+.modern-row:hover {
+    background-color: #f9fbff;
+    transform: scale(1.01);
+}
+
+/* Department pill */
+.dept-pill {
+    background: #eef2ff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+/* Status pills */
+.status-pill {
+    padding: 6px 14px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.free {
+    background: #e6f9f0;
+    color: #0f9d58;
+}
+
+.busy {
+    background: #fdecea;
+    color: #d93025;
+}
+
+.class {
+    background: #fff4e5;
+    color: #f57c00;
+}
+
+.default {
+    background: #ececec;
+    color: #555;
+}
+
+/* Background */
+body {
+    background-color: #f4f6fa;
+}
+
+</style>
+
+<script>
+function filterTable() {
+    var input = document.getElementById("searchInput");
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#profTable tr");
+
+    rows.forEach(function(row) {
+        var name = row.cells[0].innerText.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
+    });
+}
+</script>
+
+{% endblock %}

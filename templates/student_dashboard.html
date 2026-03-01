@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">My Attendance</h2>
+
+<!-- Attendance Target Card -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Your Attendance Target</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('set_threshold') }}" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="threshold" class="col-form-label">Set your target (%):</label>
+            </div>
+            <div class="col-auto">
+                <input type="number" id="threshold" name="threshold"
+                       class="form-control"
+                       value="{{ custom_threshold }}"
+                       min="0" max="100" required>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </form>
+
+        <p class="text-muted mt-2 mb-0">
+            Official minimum is 75%. Your current target is {{ custom_threshold }}%.
+        </p>
+    </div>
+</div>
+
+
+<!-- Courses -->
+<div class="row">
+    {% for course in courses %}
+    {% set warning_threshold = custom_threshold - 15 %}
+    {% set miss_param = 'miss_' ~ course.course_id %}
+    {% set miss_raw = request.args.get(miss_param) %}
+    {% set miss = miss_raw|int if miss_raw is not none and miss_raw != '' else none %}
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+
+            <div class="card-header 
+                {% if course.percentage >= custom_threshold %}bg-success
+                {% elif course.percentage >= warning_threshold %}bg-warning
+                {% else %}bg-danger{% endif %} text-white">
+
+                <h5 class="mb-0">
+                    {{ course.course_code }} - {{ course.course_name }}
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+
+                    <!-- Left Side Stats -->
+                    <div class="col-6">
+                        <p class="mb-1">
+                            <strong>Attended:</strong>
+                            {{ course.attended }}/{{ course.total_held }}
+                        </p>
+
+                        <p class="mb-1">
+                            <strong>Current %:</strong>
+                            <span class="fw-bold
+                                {% if course.percentage >= custom_threshold %}text-success
+                                {% elif course.percentage >= warning_threshold %}text-warning
+                                {% else %}text-danger{% endif %}">
+                                {{ course.percentage }}%
+                            </span>
+                        </p>
+
+                        <p class="mb-1">
+                            <strong>Remaining classes:</strong>
+                            {{ course.remaining }}
+                        </p>
+                    </div>
+
+                    <!-- Right Side Calculator -->
+                    <div class="col-6">
+                        <form method="GET"
+                              action="{{ url_for('student_dashboard') }}"
+                              class="border p-2 rounded">
+
+                            <label class="form-label">If you miss:</label>
+
+                            <input type="number"
+                                   name="{{ miss_param }}"
+                                   min="0"
+                                   max="{{ course.remaining }}"
+                                   class="form-control form-control-sm mb-2"
+                                   placeholder="e.g., 2"
+                                   value="{{ miss_raw or '' }}">
+
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-primary">
+                                Calculate
+                            </button>
+                        </form>
+
+                        {% if miss is not none %}
+                            {% set total_classes = course.total_held + course.remaining %}
+                            {% set final_attended = course.attended + (course.remaining - miss) %}
+                            {% set final_percent = (final_attended * 100.0 / total_classes) | round(1) %}
+
+                            <small class="text-muted">
+                                Final percentage:
+                                <strong>{{ final_percent }}%</strong><br>
+                                (Attend all except {{ miss }})
+                            </small>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+<!-- Disputes & Holidays -->
+<div class="row mt-4">
+
+    <!-- Pending Disputes -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Pending Disputes</h5>
+            </div>
+            <div class="card-body">
+
+                {% if disputes %}
+                <ul class="list-group">
+                    {% for dispute in disputes %}
+                    <li class="list-group-item">
+                        {{ dispute.course_code }} -
+                        {{ dispute.class_date.strftime('%d %b %Y') }}<br>
+
+                        <small>Status:
+                            <span class="badge bg-warning">
+                                Pending
+                            </span>
+                        </small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">
+                    No pending disputes
+                </p>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Holidays -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Upcoming Holidays</h5>
+            </div>
+            <div class="card-body">
+
+                {% if holidays %}
+                <ul class="list-group">
+                    {% for holiday in holidays %}
+                    <li class="list-group-item">
+                        {{ holiday.holiday_date.strftime('%d %b %Y') }} -
+                        {{ holiday.name }}
+                        <span class="badge bg-secondary">
+                            {{ holiday.type }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">
+                    No upcoming holidays
+                </p>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

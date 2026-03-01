@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Students</h5>
+                <h2>{{ student_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Professors</h5>
+                <h2>{{ professor_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Courses</h5>
+                <h2>{{ course_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Today's Classes</h5>
+                <h2>{{ today_classes }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Manage Courses -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Manage Courses</h5>
+                <p class="card-text">Add or edit courses, assign professors.</p>
+                <a href="#" class="btn btn-secondary disabled">Coming Soon</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Holidays -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Manage Holidays</h5>
+                <p class="card-text">Add university holidays.</p>
+                <a href="#" class="btn btn-secondary disabled">Coming Soon</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Random Attendance -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Generate Random Attendance</h5>
+                <p class="card-text">Create random attendance for past classes.</p>
+                <form action="{{ url_for('generate_random_attendance') }}" method="post">
+                    <button type="submit" class="btn btn-warning"
+                        onclick="return confirm('Generate random attendance for all past classes?')">
+                        Generate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

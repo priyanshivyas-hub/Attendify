@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Issue Details{% endblock %}
+{% block content %}
+<h2>Issue #{{ issue.issue_id }}: {{ issue.title }}</h2>
+<div class="card mb-3">
+    <div class="card-body">
+        <p><strong>Category:</strong> {{ issue.category_name }}</p>
+        <p><strong>Reported by:</strong> {{ issue.reporter_name }} on {{ issue.created_at.strftime('%d %b %Y %H:%M') }}</p>
+        <p><strong>Status:</strong> {{ issue.status }}</p>
+        <p><strong>Assigned to:</strong> {{ issue.assigned_name or 'Unassigned' }}</p>
+        <p><strong>Description:</strong><br>{{ issue.description }}</p>
+    </div>
+</div>
+
+<!-- Status update (for admin/dean) -->
+{% if role in ('admin', 'professor') %}
+<form method="POST" class="mb-3">
+    <div class="row">
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="pending">Pending</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-warning">Update Status</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<!-- Assignment (admin only) -->
+{% if role == 'admin' %}
+<form method="POST" class="mb-3">
+    <div class="row">
+        <div class="col-md-3">
+            <select name="assign_to" class="form-select">
+                <option value="">-- Assign to --</option>
+                {% for user in assignable_users %}
+                <option value="{{ user.user_id }}">{{ user.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-success">Assign</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<!-- Comments -->
+<div class="card">
+    <div class="card-header">Comments</div>
+    <div class="card-body" style="max-height: 300px; overflow-y: scroll;">
+        {% for cmt in comments %}
+        <div class="mb-2">
+            <strong>{{ cmt.commenter_name }}:</strong> {{ cmt.comment }}<br>
+            <small class="text-muted">{{ cmt.created_at.strftime('%d %b %H:%M') }}</small>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="card-footer">
+        <form method="POST">
+            <div class="input-group">
+                <input type="text" name="comment" class="form-control" placeholder="Add a comment...">
+                <button type="submit" class="btn btn-primary">Post</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

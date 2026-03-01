@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Campus Navigation{% endblock %}
+
+{% block content %}
+
+<h2>Campus Navigation</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5>Find Your Way</h5>
+            </div>
+            <div class="card-body">
+                <form id="navForm">
+                    <div class="mb-3">
+                        <label>Start (your current location)</label>
+                        <input type="text" class="form-control" value="Current Location" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Destination</label>
+                        <select id="end" class="form-select" required>
+                            <option value="">Select destination...</option>
+                            {% for loc in locations %}
+                            {% if loc.latitude and loc.longitude %}
+                            <option value="{{ loc.location_id }}"
+                                    data-lat="{{ loc.latitude }}"
+                                    data-lon="{{ loc.longitude }}">
+                                {{ loc.name }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary"
+                            onclick="getDirections()">
+                        Get Directions
+                    </button>
+                </form>
+
+                <div id="directions" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div id="map" style="height: 500px;"></div>
+    </div>
+</div>
+
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+    var map = L.map('map').setView([22.1245, 75.1245], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var userMarker = null;
+    var routeLine = null;
+
+    // ✅ FINAL SAFE VERSION
+    var locations = JSON.parse('{{ locations | tojson | safe }}');
+
+    locations.forEach(function(loc) {
+        if (loc.latitude && loc.longitude) {
+            L.marker([loc.latitude, loc.longitude])
+                .addTo(map)
+                .bindPopup(loc.name);
+        }
+    });
+    
+    // Get user's current location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+
+            var userLat = position.coords.latitude;
+            var userLon = position.coords.longitude;
+
+            userMarker = L.marker([userLat, userLon])
+                .addTo(map)
+                .bindPopup("You are here")
+                .openPopup();
+
+            map.setView([userLat, userLon], 16);
+
+        });
+    }
+
+    function getDirections() {
+
+        var endSelect = document.getElementById('end');
+
+        if (!endSelect.value) {
+            alert("Please select destination");
+            return;
+        }
+
+        if (!userMarker) {
+            alert("Location not detected");
+            return;
+        }
+
+        var endLat = parseFloat(endSelect.selectedOptions[0].dataset.lat);
+        var endLon = parseFloat(endSelect.selectedOptions[0].dataset.lon);
+
+        var startLat = userMarker.getLatLng().lat;
+        var startLon = userMarker.getLatLng().lng;
+
+        if (routeLine) {
+            map.removeLayer(routeLine);
+        }
+
+        var latlngs = [
+            [startLat, startLon],
+            [endLat, endLon]
+        ];
+
+        routeLine = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+
+        map.fitBounds(routeLine.getBounds());
+
+        var distance = map.distance(latlngs[0], latlngs[1]);
+
+        document.getElementById('directions').innerHTML =
+            `<strong>Distance:</strong> ${(distance / 1000).toFixed(2)} km`;
+    }
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}New Message{% endblock %}
+{% block content %}
+<h2>Select Recipient</h2>
+<div class="list-group">
+    {% for user in users %}
+    <a href="{{ url_for('message_thread', user_id=user.user_id) }}" class="list-group-item list-group-item-action">
+        <h6>{{ user.full_name }}</h6>
+        <small>{{ user.role }} - {{ user.department }}</small>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Professor Locations{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Professor Live Locations</h2>
+
+<input type="text" id="searchInput" class="form-control mb-3"
+       placeholder="Search professor by name..."
+       onkeyup="filterTable()">
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Notes</th>
+            <th>Updated</th>
+        </tr>
+    </thead>
+    <tbody id="profTable">
+        {% for prof in professors %}
+        <tr>
+            <td>{{ prof.full_name }}</td>
+            <td>{{ prof.department }}</td>
+            <td>
+                {% if prof.status == "Free" %}
+                    <span class="badge bg-success">Free</span>
+                {% elif prof.status == "Busy" %}
+                    <span class="badge bg-danger">Busy</span>
+                {% elif prof.status == "In Class" %}
+                    <span class="badge bg-warning text-dark">In Class</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ prof.status or "Not Updated" }}</span>
+                {% endif %}
+            </td>
+            <td>
+                {{ prof.building or "-" }} {{ prof.room or "" }}
+            </td>
+            <td>{{ prof.notes or "-" }}</td>
+            <td>
+                {% if prof.minutes_since_update is not none %}
+                    {{ prof.minutes_since_update }} mins ago
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function filterTable() {
+    var input = document.getElementById("searchInput");
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#profTable tr");
+
+    rows.forEach(function(row) {
+        var name = row.cells[0].innerText.toLowerCase();
+        row.style.display = name.includes(filter) ? "" : "none";
+    });
+}
+</script>
+
+{% endblock %}

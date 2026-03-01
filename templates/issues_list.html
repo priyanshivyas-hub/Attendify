@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Issues{% endblock %}
+{% block content %}
+<h2>Issues</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Reported</th>
+            {% if role != 'student' %}<th>Reporter</th>{% endif %}
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for issue in issues %}
+        <tr>
+            <td>{{ issue.issue_id }}</td>
+            <td>{{ issue.title }}</td>
+            <td>{{ issue.category_name }}</td>
+            <td>{{ issue.status }}</td>
+            <td>{{ issue.created_at.strftime('%d %b %Y') }}</td>
+            {% if role != 'student' %}<td>{{ issue.reporter_name }}</td>{% endif %}
+            <td><a href="{{ url_for('issue_detail', issue_id=issue.issue_id) }}" class="btn btn-sm btn-info">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
