@@ -1,94 +1,236 @@
+/* =============================
+   GLOBAL
+============================= */
+
 body {
-    background-color: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+    background: #f4f7fb;
+    color: #1f2937;
 }
 
-/* Navbar */
+.page-container {
+    margin-top: 40px;
+    margin-bottom: 60px;
+}
+
+/* =============================
+   NAVBAR
+============================= */
+
+.attendify-navbar {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
 .navbar-brand {
-    font-weight: bold;
+    font-size: 1.4rem;
+    letter-spacing: 0.5px;
 }
 
-/* Dashboard Header Row */
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.nav-link {
+    font-weight: 500;
+    transition: 0.2s ease;
 }
 
-/* Buttons Group at Top */
-.dashboard-actions {
-    display: flex;
-    gap: 10px;
+.nav-link:hover {
+    opacity: 0.8;
 }
 
-/* Cards */
+.welcome-text {
+    font-weight: 600;
+    color: #ffffffcc;
+}
+
+/* =============================
+   CARDS
+============================= */
+
 .card {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-    border-radius: 8px;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+    transition: 0.2s ease;
 }
 
-/* Tables */
-.table th {
-    background-color: #f2f2f2;
-}
-
-/* Alerts */
-.alert {
-    margin-top: 20px;
-}
-
-/* Buttons */
-.btn {
-    margin-right: 5px;
-    border-radius: 6px;
-}
-
-/* Improve Success Button (Send Attendance) */
-.btn-success {
-    font-weight: 500;
-    padding: 6px 14px;
-}
-
-/* Improve Warning Button (Disputes / Restore) */
-.btn-warning {
-    font-weight: 500;
-}
-
-/* Improve Primary Button */
-.btn-primary {
-    font-weight: 500;
-}
-
-/* List Group */
-.list-group-item {
-    transition: background-color 0.3s, transform 0.2s;
-    border-radius: 6px;
-    margin-bottom: 5px;
-}
-
-.list-group-item:hover {
-    background-color: #f8f9fa;
+.card:hover {
     transform: translateY(-2px);
 }
 
-/* Badge Styling */
-.badge {
-    font-size: 0.9em;
-    padding: 5px 10px;
-    border-radius: 10px;
+/* Card headers modern */
+.card-header {
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    font-weight: 600;
 }
 
-/* Attendance Stats Boxes */
-.row.text-center .col-2 {
-    font-size: 0.85rem;
+/* =============================
+   TABLES
+============================= */
+
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table thead {
+    background: #eef2ff;
+    color: #374151;
+}
+
+.table tbody tr:hover {
+    background: #f9fbff;
+}
+
+/* =============================
+   BUTTONS — ULTRA CLASSY
+============================= */
+
+.btn {
+    border-radius: 14px;
+    font-weight: 600;
+    padding: 10px 22px;
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    border: none;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(6px);
+}
+
+/* PRIMARY — Royal Blue Glass */
+.btn-primary {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(37, 99, 235, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 15px 35px rgba(37, 99, 235, 0.45),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(-1px);
+}
+
+/* SUCCESS — Emerald Luxe */
+.btn-success {
+    background: linear-gradient(135deg, #065f46, #10b981);
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(16, 185, 129, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-success:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 15px 35px rgba(16, 185, 129, 0.45),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* DANGER — Elegant Red */
+.btn-danger {
+    background: linear-gradient(135deg, #7f1d1d, #dc2626);
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(220, 38, 38, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-danger:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 15px 35px rgba(220, 38, 38, 0.45);
+}
+
+/* WARNING — Golden Premium */
+.btn-warning {
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    color: white;
+    box-shadow:
+        0 8px 25px rgba(245, 158, 11, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-warning:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 15px 35px rgba(245, 158, 11, 0.45);
+}
+
+/* SUBTLE SECONDARY */
+.btn-secondary {
+    background: rgba(255,255,255,0.8);
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+}
+
+.btn-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+/* Small buttons look proportional */
+.btn-sm {
+    padding: 6px 14px;
+    border-radius: 10px;
+}
+/* =============================
+   FORMS
+============================= */
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+/* =============================
+   BADGES
+============================= */
+
+.badge {
+    border-radius: 20px;
+    padding: 6px 10px;
     font-weight: 500;
 }
 
-/* Footer */
-footer {
-    margin-top: 50px;
-    padding: 20px 0;
-    color: #6c757d;
-    text-align: center;
+/* =============================
+   ALERTS
+============================= */
+
+.alert-modern {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+
+@media (max-width: 768px) {
+
+    .page-container {
+        margin-top: 20px;
+    }
+
+    .card {
+        margin-bottom: 15px;
+    }
+
+    h2 {
+        font-size: 1.4rem;
+    }
 }

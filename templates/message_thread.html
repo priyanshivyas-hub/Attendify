@@ -1,45 +1,80 @@
 {% extends "base.html" %}
 {% block title %}Chat{% endblock %}
 {% block content %}
-<div class="card">
+
+<div class="card shadow">
+
     <div class="card-header bg-primary text-white">
-        <h5>Chat with {{ other_name }}</h5>
+        <h5 class="mb-0">Chat with {{ other_name }}</h5>
     </div>
-    <div class="card-body" style="height: 400px; overflow-y: scroll; background: #e5ddd5;" id="messageBox">
+
+    <div class="card-body"
+         style="height: 450px; overflow-y: auto; background: #f8f9fa;"
+         id="messageBox">
+
         {% for msg in messages %}
         <div class="d-flex {% if msg.sender_id == session.user_id %}justify-content-end{% endif %} mb-2">
-            <div class="{% if msg.sender_id == session.user_id %}bg-primary text-white{% else %}bg-light{% endif %} p-2 rounded" style="max-width: 70%;">
+
+            <div class="p-2 rounded shadow-sm
+                {% if msg.sender_id == session.user_id %}
+                    bg-primary text-white
+                {% else %}
+                    bg-white border
+                {% endif %}"
+                style="max-width: 70%;">
+
                 <div>{{ msg.content }}</div>
-                <small class="{% if msg.sender_id == session.user_id %}text-white-50{% else %}text-muted{% endif %} d-block text-end">
-                    {{ msg.sent_at.strftime('%H:%M') }}
+
+                <small class="d-block text-end
                     {% if msg.sender_id == session.user_id %}
-                        {% if msg.is_read %}✓✓{% else %}✓{% endif %}
+                        text-white-50
+                    {% else %}
+                        text-muted
+                    {% endif %}">
+                    {{ msg.sent_at.strftime('%H:%M') }}
+
+                    {% if msg.sender_id == session.user_id %}
+                        {% if msg.is_read %}
+                            ✓✓
+                        {% else %}
+                            ✓
+                        {% endif %}
                     {% endif %}
                 </small>
+
             </div>
         </div>
         {% endfor %}
+
     </div>
-    <div class="card-footer">
-        <form method="POST" action="{{ url_for('send_message', conv_id=conv_id) }}" id="messageForm">
-            <div class="input-group">
-                <input type="text" name="content" class="form-control" placeholder="Type a message..." required>
-                <button type="submit" class="btn btn-primary">Send</button>
-            </div>
+
+    <div class="card-footer bg-light">
+        <form method="POST"
+              action="{{ url_for('send_message', conv_id=conv_id) }}"
+              class="d-flex gap-2">
+
+            <input type="text"
+                   name="content"
+                   class="form-control"
+                   placeholder="Type a message..."
+                   required>
+
+            <button type="submit" class="btn btn-primary">
+                Send
+            </button>
         </form>
     </div>
+
 </div>
+
 <script>
-    // Scroll to bottom on load
     var box = document.getElementById('messageBox');
     box.scrollTop = box.scrollHeight;
 
-    // Auto-refresh every 3 seconds (simple polling)
     setInterval(function() {
         fetch(window.location.href)
             .then(response => response.text())
             .then(html => {
-                // Update message box content (simplified – better to use JSON API)
                 var parser = new DOMParser();
                 var doc = parser.parseFromString(html, 'text/html');
                 var newBox = doc.getElementById('messageBox');
@@ -50,4 +85,5 @@
             });
     }, 3000);
 </script>
+
 {% endblock %}

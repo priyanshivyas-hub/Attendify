@@ -1,20 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Messages{% endblock %}
 {% block content %}
-<h2>Messages</h2>
-<a href="{{ url_for('new_message') }}" class="btn btn-primary mb-3">New Message</a>
-<div class="list-group">
-    {% for conv in conversations %}
-    <a href="{{ url_for('message_thread', user_id=conv.other_user_id) }}" class="list-group-item list-group-item-action">
-        <div class="d-flex justify-content-between">
-            <h6>{{ conv.other_name }} ({{ conv.other_role }})</h6>
-            <small>{{ conv.last_time.strftime('%d %b %H:%M') if conv.last_time else '' }}</small>
-        </div>
-        <p class="mb-1 text-truncate">{{ conv.last_message }}</p>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Messages</h2>
+    <a href="{{ url_for('new_message') }}" class="btn btn-primary">
+        + New Message
     </a>
-    {% endfor %}
 </div>
+
+<div class="card shadow-sm">
+    <div class="list-group list-group-flush">
+        {% for conv in conversations %}
+        <a href="{{ url_for('message_thread', user_id=conv.other_user_id) }}"
+           class="list-group-item list-group-item-action">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ conv.other_name }}</strong>
+                    <small class="text-muted">({{ conv.other_role }})</small>
+                </div>
+                <small class="text-muted">
+                    {{ conv.last_time.strftime('%d %b %H:%M') if conv.last_time else '' }}
+                </small>
+            </div>
+
+            <p class="mb-1 text-muted text-truncate">
+                {{ conv.last_message or "No messages yet" }}
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
 {% if not conversations %}
-<p class="text-muted">No conversations yet. Start a new message.</p>
+<p class="text-muted mt-3">
+    No conversations yet. Start a new message.
+</p>
 {% endif %}
+
 {% endblock %}

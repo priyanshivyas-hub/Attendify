@@ -103,10 +103,14 @@
                         </form>
 
                         {% if miss is not none %}
-                            {% set total_classes = course.total_held + course.remaining %}
-                            {% set final_attended = course.attended + (course.remaining - miss) %}
-                            {% set final_percent = (final_attended * 100.0 / total_classes) | round(1) %}
+                           {% set total_classes = course.total_held + course.remaining %}
+{% set final_attended = course.attended + (course.remaining - miss) %}
 
+{% if total_classes > 0 %}
+    {% set final_percent = (final_attended * 100.0 / total_classes) | round(1) %}
+{% else %}
+    {% set final_percent = 0 %}
+{% endif %}
                             <small class="text-muted">
                                 Final percentage:
                                 <strong>{{ final_percent }}%</strong><br>

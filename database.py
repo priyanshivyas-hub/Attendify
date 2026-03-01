@@ -1,4 +1,4 @@
-import psycopg2
+import pyodbc
 from config import Config
 import bcrypt
 

@@ -94,7 +94,7 @@ def login():
 
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM users WHERE LTRIM(RTRIM(LOWER(email))) = LOWER(?)",
+        "SELECT * FROM users WHERE LTRIM(RTRIM(LOWER(email))) = LOWER(%s)",
         (email,)
     )
 
@@ -145,7 +145,7 @@ def generate_random_attendance():
     """)
     instances = fetchall_dict(cursor)
     for inst in instances:
-        cursor.execute("SELECT student_id FROM enrollments WHERE course_id = ?", (inst['course_id'],))
+        cursor.execute("SELECT student_id FROM enrollments WHERE course_id = %s", (inst['course_id'],))
         students = fetchall_dict(cursor)
         for stu in students:
             r = random.random()
@@ -158,9 +158,9 @@ def generate_random_attendance():
             else:
                 status = 'excused'
             cursor.execute("""
-                IF NOT EXISTS (SELECT 1 FROM attendance WHERE instance_id = ? AND student_id = ?)
+                IF NOT EXISTS (SELECT 1 FROM attendance WHERE instance_id = %s AND student_id = %s)
                 INSERT INTO attendance (instance_id, student_id, status, marked_by, marked_at)
-                VALUES (?, ?, ?, ?, GETDATE())
+                VALUES (%s, %s, %s, %s, GETDATE())
             """, (inst['instance_id'], stu['student_id'],
                   inst['instance_id'], stu['student_id'], status, inst['course_id']))
     conn.commit()
@@ -213,7 +213,7 @@ def send_attendance_report():
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
         LEFT JOIN attendance a ON ci.instance_id = a.instance_id
-        WHERE ci.class_date = CAST(GETDATE() AS DATE) AND c.professor_id = ?
+        WHERE ci.class_date = CAST(GETDATE() AS DATE) AND c.professor_id = %s
         GROUP BY c.course_code
     """, (professor_id,))
     summary = fetchall_dict(cursor)
@@ -222,7 +222,7 @@ def send_attendance_report():
         content += f"{row['course_code']}: {row['present']}/{row['total_marked']} present\n"
     cursor.execute("""
         SELECT conv_id FROM conversations
-        WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+        WHERE (user1_id = %s AND user2_id = %s) OR (user1_id = %s AND user2_id = %s)
     """, (professor_id, admin['user_id'], admin['user_id'], professor_id))
     conv = fetchone_dict(cursor)
     if conv:
@@ -231,12 +231,12 @@ def send_attendance_report():
         cursor.execute("""
         INSERT INTO conversations (user1_id, user2_id) 
         OUTPUT INSERTED.conv_id 
-        VALUES (?, ?)
+        VALUES (%s, %s)
     """, (professor_id, admin['user_id']))
 
     inserted = fetchone_dict(cursor)
     conv_id = inserted['conv_id']    
-    cursor.execute("INSERT INTO messages (conv_id, sender_id, content) VALUES (?, ?, ?)",
+    cursor.execute("INSERT INTO messages (conv_id, sender_id, content) VALUES (%s, %s, %s)",
                    (conv_id, professor_id, content))
     conn.commit()
     cursor.close()
@@ -288,7 +288,7 @@ def student_dashboard():
         LEFT JOIN attendance a ON a.instance_id = ci.instance_id 
                               AND a.student_id = e.student_id
                               AND a.status IN ('present', 'late')
-        WHERE e.student_id = ? AND e.course_id = c.course_id
+        WHERE e.student_id = %s AND e.course_id = c.course_id
           AND ci.class_date <= CAST(GETDATE() AS DATE)
           AND ci.status != 'cancelled'
     ) att
@@ -300,7 +300,7 @@ def student_dashboard():
           AND ci.class_date > CAST(GETDATE() AS DATE)
           AND ci.status != 'cancelled'
     ) rem
-    WHERE c.course_id IN (SELECT course_id FROM enrollments WHERE student_id = ?)
+    WHERE c.course_id IN (SELECT course_id FROM enrollments WHERE student_id = %s)
     ORDER BY c.course_code
     """
     cursor.execute(query, (user_id, user_id))
@@ -313,7 +313,7 @@ def student_dashboard():
         JOIN class_instances ci ON a.instance_id = ci.instance_id
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE d.student_id = ? AND d.status = 'pending'
+        WHERE d.student_id = %s AND d.status = 'pending'
     """, (user_id,))
     disputes = fetchall_dict(cursor)
 
@@ -323,7 +323,7 @@ def student_dashboard():
     """)
     holidays = fetchall_dict(cursor)
 
-    cursor.execute("SELECT custom_attendance_threshold FROM users WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT custom_attendance_threshold FROM users WHERE user_id = %s", (user_id,))
     row = fetchone_dict(cursor)
     custom_threshold = row['custom_attendance_threshold'] if row and row['custom_attendance_threshold'] is not None else 75
 
@@ -347,7 +347,7 @@ def submit_dispute(attendance_id):
 
     cursor = conn.cursor()
 
-    cursor.execute("SELECT attendance_id FROM attendance WHERE attendance_id = ? AND student_id = ?",
+    cursor.execute("SELECT attendance_id FROM attendance WHERE attendance_id = %s AND student_id = %s",
                    (attendance_id, student_id))
     if not fetchone_dict(cursor):
         flash('Invalid attendance record', 'danger')
@@ -355,11 +355,11 @@ def submit_dispute(attendance_id):
         conn.close()
         return redirect(url_for('student_dashboard'))
 
-    cursor.execute("SELECT dispute_id FROM disputes WHERE attendance_id = ? AND status = 'pending'", (attendance_id,))
+    cursor.execute("SELECT dispute_id FROM disputes WHERE attendance_id = %s AND status = 'pending'", (attendance_id,))
     if fetchone_dict(cursor):
         flash('Dispute already pending', 'warning')
     else:
-        cursor.execute("INSERT INTO disputes (attendance_id, student_id, reason) VALUES (?, ?, ?)",
+        cursor.execute("INSERT INTO disputes (attendance_id, student_id, reason) VALUES (%s, %s, %s)",
                        (attendance_id, student_id, reason))
         conn.commit()
         flash('Dispute submitted', 'success')
@@ -401,7 +401,7 @@ def professor_dashboard():
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
         WHERE ci.class_date = CAST(GETDATE() AS DATE)
-          AND c.professor_id = ?
+          AND c.professor_id = %s
           AND ci.status != 'cancelled'
         ORDER BY s.start_time
     """, (professor_id,))
@@ -415,7 +415,7 @@ def professor_dashboard():
         JOIN courses c ON s.course_id = c.course_id
         WHERE ci.class_date > CAST(GETDATE() AS DATE)
           AND ci.class_date <= DATEADD(day, 7, CAST(GETDATE() AS DATE))
-          AND c.professor_id = ?
+          AND c.professor_id = %s
           AND ci.status != 'cancelled'
         ORDER BY ci.class_date
     """, (professor_id,))
@@ -428,7 +428,7 @@ def professor_dashboard():
         FROM courses c
         LEFT JOIN schedule s ON c.course_id = s.course_id
         LEFT JOIN class_instances ci ON s.schedule_id = ci.schedule_id AND ci.class_date <= CAST(GETDATE() AS DATE)
-        WHERE c.professor_id = ?
+        WHERE c.professor_id = %s
         GROUP BY c.course_code, c.course_name, c.total_lectures
     """, (professor_id,))
     course_summary = fetchall_dict(cursor)
@@ -440,7 +440,7 @@ def professor_dashboard():
         JOIN class_instances ci ON a.instance_id = ci.instance_id
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE c.professor_id = ? AND d.status = 'pending'
+        WHERE c.professor_id = %s AND d.status = 'pending'
     """, (professor_id,))
     row = fetchone_dict(cursor)
     pending_count = row['count'] if row else 0
@@ -452,7 +452,7 @@ def professor_dashboard():
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
         WHERE ci.class_date = CAST(GETDATE() AS DATE)
-          AND c.professor_id = ?
+          AND c.professor_id = %s
           AND ci.status = 'cancelled'
         ORDER BY s.start_time
     """, (professor_id,))
@@ -467,7 +467,7 @@ def professor_dashboard():
         JOIN courses c ON s.course_id = c.course_id
         WHERE ci.class_date > CAST(GETDATE() AS DATE)
           AND ci.class_date <= DATEADD(day, 7, CAST(GETDATE() AS DATE))
-          AND c.professor_id = ?
+          AND c.professor_id = %s
           AND ci.status = 'cancelled'
         ORDER BY ci.class_date
     """, (professor_id,))
@@ -504,7 +504,7 @@ def cancel_class(instance_id):
         SELECT ci.instance_id FROM class_instances ci
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.instance_id = ? AND c.professor_id = ?
+        WHERE ci.instance_id = %s AND c.professor_id = %s
     """, (instance_id, professor_id))
     if not fetchone_dict(cursor):
         flash('Access denied', 'danger')
@@ -515,8 +515,8 @@ def cancel_class(instance_id):
     cursor.execute("""
     UPDATE class_instances 
     SET status = 'cancelled',
-        cancellation_reason = ?
-    WHERE instance_id = ?
+        cancellation_reason = %s
+    WHERE instance_id = %s
 """, (reason, instance_id))
     conn.commit()
     cursor.close()
@@ -542,7 +542,7 @@ def save_attendance(instance_id):
         FROM class_instances ci
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.instance_id = ? AND c.professor_id = ?
+        WHERE ci.instance_id = %s AND c.professor_id = %s
     """, (instance_id, professor_id))
     row = fetchone_dict(cursor)
     if not row:
@@ -561,7 +561,7 @@ def save_attendance(instance_id):
         SELECT ci.instance_id FROM class_instances ci
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.instance_id = ? AND c.professor_id = ?
+        WHERE ci.instance_id = %s AND c.professor_id = %s
     """, (instance_id, professor_id))
     if not fetchone_dict(cursor):
         flash('Access denied', 'danger')
@@ -573,18 +573,18 @@ def save_attendance(instance_id):
         if key.startswith('student_'):
             student_id = key.replace('student_', '')
             status = value
-            cursor.execute("SELECT attendance_id FROM attendance WHERE instance_id = ? AND student_id = ?",
+            cursor.execute("SELECT attendance_id FROM attendance WHERE instance_id = %s AND student_id = %s",
                            (instance_id, student_id))
             existing = fetchone_dict(cursor)
             if existing:
                 cursor.execute("""
-                    UPDATE attendance SET status = ?, marked_by = ?, marked_at = GETDATE()
-                    WHERE instance_id = ? AND student_id = ?
+                    UPDATE attendance SET status = %s, marked_by = %s, marked_at = GETDATE()
+                    WHERE instance_id = %s AND student_id = %s
                 """, (status, professor_id, instance_id, student_id))
             else:
                 cursor.execute("""
                     INSERT INTO attendance (instance_id, student_id, status, marked_by)
-                    VALUES (?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s)
                 """, (instance_id, student_id, status, professor_id))
 
     conn.commit()
@@ -607,7 +607,7 @@ def restore_class(instance_id):
         SELECT ci.instance_id FROM class_instances ci
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.instance_id = ? AND c.professor_id = ?
+        WHERE ci.instance_id = %s AND c.professor_id = %s
     """, (instance_id, professor_id))
 
     if not fetchone_dict(cursor):
@@ -619,7 +619,7 @@ def restore_class(instance_id):
     cursor.execute("""
         UPDATE class_instances 
         SET status = 'scheduled', cancellation_reason = NULL
-        WHERE instance_id = ?
+        WHERE instance_id = %s
     """, (instance_id,))
 
     conn.commit()
@@ -651,7 +651,7 @@ def view_disputes():
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
         JOIN users u ON d.student_id = u.user_id
-        WHERE c.professor_id = ? AND d.status = 'pending'
+        WHERE c.professor_id = %s AND d.status = 'pending'
         ORDER BY d.submitted_at DESC
     """, (professor_id,))
     disputes = fetchall_dict(cursor)
@@ -680,7 +680,7 @@ def resolve_dispute(dispute_id):
         JOIN class_instances ci ON a.instance_id = ci.instance_id
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
-        WHERE d.dispute_id = ? AND c.professor_id = ?
+        WHERE d.dispute_id = %s AND c.professor_id = %s
     """, (dispute_id, professor_id))
     dispute = fetchone_dict(cursor)
     if not dispute:
@@ -690,13 +690,13 @@ def resolve_dispute(dispute_id):
         return redirect(url_for('view_disputes'))
 
     if action == 'approve':
-        cursor.execute("UPDATE attendance SET status = 'present' WHERE attendance_id = ?", 
+        cursor.execute("UPDATE attendance SET status = 'present' WHERE attendance_id = %s", 
                    (dispute['attendance_id'],))
-        cursor.execute("UPDATE disputes SET status = 'approved' WHERE dispute_id = ?",
+        cursor.execute("UPDATE disputes SET status = 'approved' WHERE dispute_id = %s",
                    (dispute_id,))
         flash('Dispute approved', 'success')
     else:
-        cursor.execute("UPDATE disputes SET status = 'rejected' WHERE dispute_id = ?",
+        cursor.execute("UPDATE disputes SET status = 'rejected' WHERE dispute_id = %s",
                    (dispute_id,))
         flash('Dispute rejected', 'info')
 
@@ -726,33 +726,33 @@ def manage_location():
         status = request.form.get('status')
         notes = request.form.get('notes')
 
-        cursor.execute("SELECT professor_id FROM professor_current_location WHERE professor_id = ?", (professor_id,))
+        cursor.execute("SELECT professor_id FROM professor_current_location WHERE professor_id = %s", (professor_id,))
         existing = fetchone_dict(cursor)
 
         if existing:
             cursor.execute("""
                 UPDATE professor_current_location
-                SET location_type = ?, building = ?, room = ?, 
-                    status = ?, notes = ?, updated_at = GETDATE()
-                WHERE professor_id = ?
+                SET location_type = %s, building = %s, room = %s, 
+                    status = %s, notes = %s, updated_at = GETDATE()
+                WHERE professor_id = %s
             """, (location_type, building, room, status, notes, professor_id))
         else:
             cursor.execute("""
                 INSERT INTO professor_current_location
                 (professor_id, location_type, building, room, status, notes)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """, (professor_id, location_type, building, room, status, notes))
 
         cursor.execute("""
             INSERT INTO professor_location_history
             (professor_id, location_type, building, room, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (professor_id, location_type, building, room, status, notes))
 
         conn.commit()
         flash('Location updated successfully', 'success')
 
-    cursor.execute("SELECT * FROM professor_current_location WHERE professor_id = ?", (professor_id,))
+    cursor.execute("SELECT * FROM professor_current_location WHERE professor_id = %s", (professor_id,))
     location = fetchone_dict(cursor)
 
     cursor.close()
@@ -769,7 +769,7 @@ def get_professor_location(professor_id):
     cursor.execute("""
         SELECT *
         FROM vw_professor_live_status
-        WHERE user_id = ?
+        WHERE user_id = %s
     """, (professor_id,))
     location = fetchone_dict(cursor)
     conn.close()
@@ -861,15 +861,15 @@ def message_list():
     cursor = conn.cursor()
     cursor.execute("""
         SELECT c.conv_id,
-               CASE WHEN c.user1_id = ? THEN u2.user_id ELSE u1.user_id END AS other_user_id,
-               CASE WHEN c.user1_id = ? THEN u2.full_name ELSE u1.full_name END AS other_name,
-               CASE WHEN c.user1_id = ? THEN u2.role ELSE u1.role END AS other_role,
+               CASE WHEN c.user1_id = %s THEN u2.user_id ELSE u1.user_id END AS other_user_id,
+               CASE WHEN c.user1_id = %s THEN u2.full_name ELSE u1.full_name END AS other_name,
+               CASE WHEN c.user1_id = %s THEN u2.role ELSE u1.role END AS other_role,
                (SELECT TOP 1 content FROM messages WHERE conv_id = c.conv_id ORDER BY sent_at DESC) AS last_message,
                (SELECT TOP 1 sent_at FROM messages WHERE conv_id = c.conv_id ORDER BY sent_at DESC) AS last_time
         FROM conversations c
         JOIN users u1 ON c.user1_id = u1.user_id
         JOIN users u2 ON c.user2_id = u2.user_id
-        WHERE c.user1_id = ? OR c.user2_id = ?
+        WHERE c.user1_id = %s OR c.user2_id = %s
         ORDER BY last_time DESC
     """, (user_id, user_id, user_id, user_id, user_id))
     convs = fetchall_dict(cursor)
@@ -893,8 +893,8 @@ def message_thread(user_id):
     # Step 1: Check if conversation already exists
     cursor.execute("""
         SELECT conv_id FROM conversations
-        WHERE (user1_id = ? AND user2_id = ?)
-           OR (user1_id = ? AND user2_id = ?)
+        WHERE (user1_id = %s AND user2_id = %s)
+           OR (user1_id = %s AND user2_id = %s)
     """, (current_user, user_id, user_id, current_user))
 
     row = fetchone_dict(cursor)
@@ -905,7 +905,7 @@ def message_thread(user_id):
         # Step 2: Create new conversation
         cursor.execute("""
             INSERT INTO conversations (user1_id, user2_id)
-            VALUES (?, ?)
+            VALUES (%s, %s)
         """, (current_user, user_id))
 
         conn.commit()
@@ -913,8 +913,8 @@ def message_thread(user_id):
         # Step 3: Fetch the newly created conversation
         cursor.execute("""
             SELECT conv_id FROM conversations
-            WHERE (user1_id = ? AND user2_id = ?)
-               OR (user1_id = ? AND user2_id = ?)
+            WHERE (user1_id = %s AND user2_id = %s)
+               OR (user1_id = %s AND user2_id = %s)
         """, (current_user, user_id, user_id, current_user))
 
         new_row = fetchone_dict(cursor)
@@ -932,30 +932,40 @@ def message_thread(user_id):
         SELECT m.*, u.full_name AS sender_name
         FROM messages m
         JOIN users u ON m.sender_id = u.user_id
-        WHERE m.conv_id = ?
+        WHERE m.conv_id = %s
         ORDER BY m.sent_at
     """, (conv_id,))
 
     messages = fetchall_dict(cursor)
 
-    # Step 5: Mark messages as read
-    cursor.execute("""
-        UPDATE messages
-        SET is_read = 1
-        WHERE conv_id = ? AND sender_id != ?
-    """, (conv_id, current_user))
+    @app.route('/api/unread_count')
+    def unread_count():
+        if 'user_id' not in session:
+          return {'count': 0}
 
-    conn.commit()
+    current_user = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT conv_id)
+        FROM messages
+        WHERE sender_id != %s
+        AND is_read = 0
+        AND conv_id IN (
+            SELECT conv_id
+            FROM messages
+            WHERE sender_id = %s OR receiver_id = %s
+        )
+    """, (current_user, current_user, current_user))
+
+    row = cursor.fetchone()
+    count = row[0] if row and row[0] else 0
 
     cursor.close()
     conn.close()
 
-    return render_template(
-        'message_thread.html',
-        other_user_id=user_id,
-        messages=messages,
-        conv_id=conv_id
-    )
+    return {'count': count}
 
 @app.route('/messages/<int:conv_id>/send', methods=['POST'])
 @login_required
@@ -964,7 +974,7 @@ def send_message(conv_id):
     sender_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO messages (conv_id, sender_id, content) VALUES (?, ?, ?)",
+    cursor.execute("INSERT INTO messages (conv_id, sender_id, content) VALUES (%s, %s, %s)",
                    (conv_id, sender_id, content))
     conn.commit()
     cursor.close()
@@ -981,7 +991,7 @@ def new_message():
     cursor.execute("""
         SELECT user_id, full_name, role, department
         FROM users
-        WHERE user_id != ?
+        WHERE user_id != %s
         ORDER BY role, full_name
     """, (current_user,))
     users = fetchall_dict(cursor)
@@ -1026,7 +1036,7 @@ def set_threshold():
             user_id = session['user_id']
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("UPDATE users SET custom_attendance_threshold = ? WHERE user_id = ?",
+            cursor.execute("UPDATE users SET custom_attendance_threshold = %s WHERE user_id = %s",
                            (threshold, user_id))
             conn.commit()
             cursor.close()
@@ -1049,7 +1059,7 @@ def report_issue():
         reporter_id = session['user_id']
         cursor.execute("""
             INSERT INTO issues (reporter_id, category_id, title, description, location_id)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         """, (reporter_id, category_id, title, description, location_id))
         conn.commit()
         flash('Issue reported successfully', 'success')
@@ -1075,7 +1085,7 @@ def list_issues():
             SELECT i.*, ic.name AS category_name
             FROM issues i
             JOIN issue_categories ic ON i.category_id = ic.cat_id
-            WHERE i.reporter_id = ?
+            WHERE i.reporter_id = %s
             ORDER BY i.created_at DESC
         """, (user_id,))
     elif role in ('professor', 'admin'):
@@ -1102,13 +1112,13 @@ def issue_detail(issue_id):
     if request.method == 'POST':
         if 'status' in request.form:
             new_status = request.form.get('status')
-            cursor.execute("UPDATE issues SET status = ? WHERE issue_id = ?", (new_status, issue_id))
+            cursor.execute("UPDATE issues SET status = %s WHERE issue_id = %s", (new_status, issue_id))
         if 'assign' in request.form and role == 'admin':
             assign_to = request.form.get('assign_to')
-            cursor.execute("UPDATE issues SET assigned_to = ? WHERE issue_id = ?", (assign_to, issue_id))
+            cursor.execute("UPDATE issues SET assigned_to = %s WHERE issue_id = %s", (assign_to, issue_id))
         if 'comment' in request.form:
             comment = request.form.get('comment')
-            cursor.execute("INSERT INTO issue_comments (issue_id, user_id, comment) VALUES (?, ?, ?)",
+            cursor.execute("INSERT INTO issue_comments (issue_id, user_id, comment) VALUES (%s, %s, %s)",
                            (issue_id, user_id, comment))
         conn.commit()
     cursor.execute("""
@@ -1118,7 +1128,7 @@ def issue_detail(issue_id):
         JOIN issue_categories ic ON i.category_id = ic.cat_id
         JOIN users u_reporter ON i.reporter_id = u_reporter.user_id
         LEFT JOIN users u_assigned ON i.assigned_to = u_assigned.user_id
-        WHERE i.issue_id = ?
+        WHERE i.issue_id = %s
     """, (issue_id,))
     issue = fetchone_dict(cursor)
 
@@ -1131,7 +1141,7 @@ def issue_detail(issue_id):
         SELECT c.*, u.full_name AS commenter_name
         FROM issue_comments c
         JOIN users u ON c.user_id = u.user_id
-        WHERE c.issue_id = ?
+        WHERE c.issue_id = %s
         ORDER BY c.created_at
     """, (issue_id,))
     comments = fetchall_dict(cursor)
@@ -1155,23 +1165,28 @@ def debug_db():
 
 
 @app.route('/api/unread_count')
-@login_required
 def unread_count():
+    if 'user_id' not in session:
+        return {'count': 0}
+
     user_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
-        SELECT COUNT(*)
-        FROM messages m
-        JOIN conversations c ON m.conv_id = c.conv_id
-        WHERE (c.user1_id = ? OR c.user2_id = ?) AND m.sender_id != ? AND m.is_read = 0
-    """, (user_id, user_id, user_id))
-    row = fetchone_dict(cursor)
-    count = row['count'] if row else 0
+        SELECT COUNT(DISTINCT sender_id)
+        FROM messages
+        WHERE receiver_id = %s
+        AND is_read = FALSE
+    """, (user_id,))
+
+    result = cursor.fetchone()
+    count = result[0] if result and result[0] else 0
+
     cursor.close()
     conn.close()
-    return {'count': count}
 
+    return {'count': count}
 
 # ==================== MAIN ====================
 if __name__ == '__main__':
