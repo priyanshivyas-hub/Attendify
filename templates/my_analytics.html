@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My Analytics{% endblock %}
+{% block page_title %}My Attendance Analytics{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">My Course Performance</div>
+    <div class="card-body">
+        <canvas id="myChart" height="300"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch('/api/my-attendance-data')
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('myChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.course_code),
+                datasets: [{
+                    label: 'Attendance %',
+                    data: data.map(d => d.percentage),
+                    backgroundColor: data.map(d => d.percentage >= 75 ? '#10b981' : d.percentage >= 60 ? '#f59e0b' : '#ef4444')
+                }]
+            },
+            options: {
+                scales: { y: { max: 100 } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}

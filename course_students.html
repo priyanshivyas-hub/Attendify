@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+{% block page_title %}{{ course.course_code }} - Students{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h5 class="mb-0">{{ course.course_name }} ({{ course.course_code }})</h5>
+        <a href="{{ url_for('manage_courses') }}" class="btn btn-sm btn-outline">← Back</a>
+    </div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead>
+                <tr><th>Student</th><th>Email</th><th>Attended</th><th>Total</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td><strong>{{ s.full_name }}</strong></td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.attended or 0 }}</td>
+                    <td>{{ s.total_classes or 0 }}</td>
+                    <td><span class="fw-bold {% if s.percentage >= 75 %}text-success{% elif s.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">{{ s.percentage or 0 }}%</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

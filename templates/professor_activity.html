@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Professor Activity{% endblock %}
+{% block page_title %}Professor Activity{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">All Professors - Class Activity</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Professor</th>
+                    <th>Classes Held</th>
+                    <th>Attendance Marked</th>
+                    <th>Completion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prof in professors %}
+                <tr>
+                    <td><strong>{{ prof.full_name }}</strong></td>
+                    <td>{{ prof.total_classes or 0 }}</td>
+                    <td>{{ prof.marked_count or 0 }}</td>
+                    <td>
+                        {% if prof.total_classes and prof.total_classes > 0 %}
+                            <div class="progress" style="height:6px;width:100px;">
+                                <div class="progress-bar bg-success" style="width: {{ (prof.marked_count / prof.total_classes * 100)|round }}%;"></div>
+                            </div>
+                        {% else %}
+                            <span class="text-secondary">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+/* Ensure table text is readable in dark mode */
+[data-theme="dark"] .table { color: #f1f5f9; }
+[data-theme="dark"] .table th { color: #94a3b8; }
+[data-theme="dark"] .table td { color: #f1f5f9; border-bottom-color: #334155; }
+[data-theme="dark"] .table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .text-secondary { color: #94a3b8 !important; }
+[data-theme="dark"] .progress { background: #334155; }
+</style>
+{% endblock %}

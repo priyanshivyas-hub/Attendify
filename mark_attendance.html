@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance{% endblock %}
+{% block page_title %}Mark Attendance - {{ class_info.course_code }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{{ class_info.course_name }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <table class="table">
+                <thead><tr><th>Student</th><th>Email</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ s.full_name }}</td>
+                        <td>{{ s.email }}</td>
+                        <td>
+                            <select name="student_{{ s.user_id }}" class="form-select form-select-sm">
+                                <option value="present" {% if s.current_status == 'present' %}selected{% endif %}>Present</option>
+                                <option value="absent" {% if s.current_status == 'absent' %}selected{% endif %}>Absent</option>
+                                <option value="late" {% if s.current_status == 'late' %}selected{% endif %}>Late</option>
+                                <option value="excused" {% if s.current_status == 'excused' %}selected{% endif %}>Excused</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i> Save</button>
+            <a href="{{ url_for('manage_courses') }}" class="btn btn-outline">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,2 @@
+UPDATE users
+SET password_hash = 'scrypt:32768:8:1$dqVeUslmScsC1kaz$83017aab01fb0ce20fb4899d8ac29de037fb5cdd783eaa8ac9da2918c3170ade972b0d007807f68079f745cc54f53981077242029471fa0817b7f4ec0ffdc93f'

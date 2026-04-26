@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Update Location{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Update My Current Location</h2>
+
+<div class="card p-4 shadow-sm">
+    <form method="POST">
+
+        <div class="mb-3">
+            <label class="form-label">Location Type</label>
+            <select name="location_type" class="form-control" required>
+                <option value="Office">Office</option>
+                <option value="Lab">Lab</option>
+                <option value="Class">Class</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Leave">On Leave</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Building</label>
+            <input type="text" name="building" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Room</label>
+            <input type="text" name="room" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control" required>
+                <option value="Free">Free</option>
+                <option value="Busy">Busy</option>
+                <option value="In Class">In Class</option>
+                <option value="Available Soon">Available Soon</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Notes (Optional)</label>
+            <input type="text" name="notes" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Update Location
+        </button>
+    </form>
+</div>
+
+{% if location %}
+<hr>
+<h5 class="mt-4">Current Status</h5>
+<div class="alert alert-info">
+    <strong>{{ location.status }}</strong><br>
+    {{ location.location_type }} - {{ location.building }} {{ location.room }}<br>
+    Updated at: {{ location.updated_at }}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block page_title %}Messages{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-5 col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Conversations</h5>
+                <a href="{{ url_for('new_message') }}" class="btn btn-primary btn-sm rounded-pill">
+                    <i class="fas fa-plus me-1"></i> New
+                </a>
+            </div>
+            <div class="card-body p-0" style="max-height: 70vh; overflow-y: auto;">
+                {% if conversations %}
+                    {% for conv in conversations %}
+                    <a href="{{ url_for('message_thread', user_id=conv.other_user_id) }}" class="text-decoration-none">
+                        <div class="d-flex align-items-center p-3 border-bottom hover-bg">
+                            <div class="avatar me-3 bg-{% if conv.other_role == 'professor' %}warning{% elif conv.other_role == 'admin' %}danger{% else %}primary{% endif %}" style="min-width: 45px; height: 45px;">
+                                {{ conv.other_name[0] }}
+                            </div>
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="text-truncate">{{ conv.other_name }}</strong>
+                                    <small class="text-secondary ms-2">{{ conv.last_time or '' }}</small>
+                                </div>
+                                <small class="text-secondary text-truncate d-block">{{ conv.last_message or 'No messages' }}</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-secondary mb-3"></i>
+                        <p>No conversations yet</p>
+                        <a href="{{ url_for('new_message') }}" class="btn btn-primary btn-sm">Start a conversation</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7 col-md-6 d-none d-md-flex align-items-center justify-content-center">
+        <div class="text-center text-secondary">
+            <i class="fas fa-comment-dots fa-5x mb-3"></i>
+            <h5>Select a conversation</h5>
+            <p>Choose someone to start chatting</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

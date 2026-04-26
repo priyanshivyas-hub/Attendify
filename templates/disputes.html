@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Disputes{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Pending Disputes</h2>
+
+{% if disputes %}
+<div class="list-group">
+    {% for dispute in disputes %}
+    <div class="list-group-item">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ dispute.student_name }} ({{ dispute.email }})</h5>
+            <small>{{ dispute.submitted_at.strftime('%d %b %Y, %H:%M') }}</small>
+        </div>
+        <p class="mb-1"><strong>Course:</strong> {{ dispute.course_code }} - {{ dispute.course_name }}</p>
+        <p class="mb-1"><strong>Date:</strong> {{ dispute.class_date }}</p>
+        <p class="mb-1"><strong>Original Status:</strong> 
+            <span class="badge bg-secondary">{{ dispute.original_status }}</span>
+        </p>
+        <p class="mb-2"><strong>Reason:</strong> {{ dispute.reason }}</p>
+        
+        <form method="POST" action="{{ url_for('resolve_dispute', dispute_id=dispute.dispute_id) }}" class="mt-2">
+            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm" 
+                    onclick="return confirm('Approve this dispute? This will mark student as present.')">
+                Approve
+            </button>
+            <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Reject this dispute?')">
+                Reject
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    No pending disputes.
+</div>
+{% endif %}
+
+<a href="{{ url_for('professor_dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+{% endblock %}

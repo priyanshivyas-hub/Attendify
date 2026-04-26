@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Create Special Class Day</h2>
+
+<form method="POST">
+
+<div class="row">
+
+<div class="col">
+<label>Date</label>
+<input type="date" name="class_date" class="form-control" required>
+</div>
+
+<div class="col">
+<label>Follow timetable of</label>
+
+<select name="follow_day" class="form-control">
+
+{% for d in days %}
+
+<option value="{{ d.day_of_week }}">
+{{ d.day_of_week }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="col">
+<label>Note</label>
+<input type="text" name="note" class="form-control">
+</div>
+
+<div class="col mt-4">
+<button class="btn btn-primary">
+Create
+</button>
+</div>
+
+</div>
+
+</form>
+
+<hr>
+
+<h4>Existing Special Days</h4>
+
+<table class="table">
+
+<tr>
+<th>Date</th>
+<th>Timetable Followed</th>
+<th>Status</th>
+</tr>
+
+{% for d in special_days %}
+
+<tr>
+
+<td>{{ d.class_date }}</td>
+<td>{{ d.follow_day }}</td>
+
+<td>
+{% if d.approved %}
+Approved
+{% else %}
+Pending
+{% endif %}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}

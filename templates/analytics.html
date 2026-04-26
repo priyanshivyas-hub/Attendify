@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Attendance Analytics{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">At-Risk Students (Below 75%)</div>
+            <div class="card-body" style="max-height:400px;overflow-y:auto;">
+                <table class="table table-sm" id="riskTable">
+                    <thead><tr><th>Student</th><th>Course</th><th>%</th><th>Attended/Total</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Attendance Trends</div>
+            <div class="card-body">
+                <select id="courseSelect" class="form-select mb-3" onchange="loadTrends()">
+                    <option value="">Select course...</option>
+                    <option value="1">IT3CO05 - DBMS</option>
+                    <option value="2">IT3CO21 - OS</option>
+                    <option value="3">IT3CO29 - Stats</option>
+                    <option value="4">IT3CO30 - AI</option>
+                    <option value="5">IT3CO32 - MPMC</option>
+                    <option value="6">IT3CO34 - DAA</option>
+                    <option value="7">EN3NG10 - Soft Skills</option>
+                </select>
+                <canvas id="trendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let trendChart;
+
+function loadAtRisk(){
+    fetch('/api/analytics/at-risk-students')
+        .then(r=>r.json())
+        .then(data=>{
+            let html = '';
+            data.forEach(d=>{
+                html += `<tr><td>${d.full_name}</td><td>${d.course_code}</td>
+                    <td><span class="text-danger fw-bold">${d.percentage}%</span></td>
+                    <td>${d.attended}/${d.total_classes}</td></tr>`;
+            });
+            document.querySelector('#riskTable tbody').innerHTML = html || '<tr><td colspan="4" class="text-center">No at-risk students</td></tr>';
+        });
+}
+
+function loadTrends(){
+    let courseId = document.getElementById('courseSelect').value;
+    if(!courseId) return;
+    
+    fetch('/api/analytics/course/'+courseId+'/trends')
+        .then(r=>r.json())
+        .then(data=>{
+            let labels = data.map(d=>d.class_date);
+            let values = data.map(d=>d.present_count ? (d.present_count/d.total_students*100).toFixed(1) : 0);
+            
+            if(trendChart) trendChart.destroy();
+            trendChart = new Chart(document.getElementById('trendChart'), {
+                type:'line',
+                data:{
+                    labels:labels,
+                    datasets:[{label:'Attendance %',data:values,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',fill:true,tension:0.4}]
+                },
+                options:{responsive:true}
+            });
+        });
+}
+
+loadAtRisk();
+</script>
+{% endblock %}

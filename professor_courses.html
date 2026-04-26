@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}My Courses{% endblock %}
+{% block page_title %}Course Management{% endblock %}
+
+{% block content %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Add New Course</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('add_course') }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Course Code</label>
+                    <input type="text" name="course_code" class="form-control" placeholder="e.g. IT3CO40" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Course Name</label>
+                    <input type="text" name="course_name" class="form-control" placeholder="Course Name" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Credits</label>
+                    <input type="number" name="credits" class="form-control" value="3">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Total Lectures</label>
+                    <input type="number" name="total_lectures" class="form-control" value="40">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% for course in courses %}
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>{{ course.course_code }}</strong> — {{ course.course_name }}
+            <span class="badge badge-info ms-2">{{ course.total_students }} students</span>
+            <span class="badge badge-success ms-1">{{ course.classes_held }} held</span>
+        </div>
+        <form method="POST" action="{{ url_for('delete_course', course_id=course.course_id) }}" onsubmit="return confirm('Delete this course?')">
+            <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+        </form>
+    </div>
+    <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('course_students', course_id=course.course_id) }}" class="btn btn-outline btn-sm">
+                <i class="fas fa-users me-1"></i> View Students
+            </a>
+            <a href="{{ url_for('mark_course_attendance', course_id=course.course_id) }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-clipboard-check me-1"></i> Mark Attendance
+            </a>
+            <form method="POST" action="{{ url_for('send_class_count', course_id=course.course_id) }}" class="d-inline">
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="fas fa-paper-plane me-1"></i> Send Count to Admin
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% if not courses %}
+<div class="text-center py-5">
+    <i class="fas fa-book fa-3x text-secondary mb-3"></i>
+    <h5>No courses assigned</h5>
+    <p class="text-secondary">Add your first course using the form above</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant{% endblock %}
+{% block page_title %}Gemini AI Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ai-chat-container {
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+    .ai-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        padding: 30px;
+        text-align: center;
+        color: white;
+    }
+    .ai-header .ai-avatar {
+        width: 80px; 
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        margin: 0 auto 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        color: #667eea;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .ai-messages {
+        height: 50vh;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+    }
+    
+    /* Avatar styles */
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .avatar.bg-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .avatar.bg-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    /* Chat bubble styles */
+    .chat-bubble {
+        max-width: 70%;
+        padding: 12px 18px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        line-height: 1.4;
+    }
+    
+    .chat-bubble.sent {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .chat-bubble.received {
+        background: white;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 4px;
+    }
+    
+    /* Typing indicator */
+    .typing-indicator {
+        display: inline-flex;
+        gap: 4px;
+        padding: 12px 18px;
+        background: white;
+        border-radius: 18px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .typing-indicator span {
+        width: 8px; 
+        height: 8px;
+        border-radius: 50%;
+        background: #999;
+        animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+    }
+    
+    /* Input group styling */
+    .input-group .form-control {
+        border-right: none;
+    }
+    
+    .input-group .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Scrollbar styling */
+    .ai-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .ai-messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .ai-messages::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+    
+    .ai-messages::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Dark mode support */
+    [data-theme="dark"] .ai-messages {
+        background: #1a1a1a;
+    }
+    
+    [data-theme="dark"] .chat-bubble.received {
+        background: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #404040;
+    }
+    
+    [data-theme="dark"] .typing-indicator {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="ai-chat-container card">
+            <div class="ai-header">
+                <div class="ai-avatar">
+                    🎓
+                </div>
+                <h4 class="mb-1">Attendify AI</h4>
+                <small>Powered by Google Gemini</small>
+            </div>
+            <div class="ai-messages" id="aiChatBox">
+                <div class="d-flex gap-3 mb-3">
+                    <div class="avatar bg-primary">AI</div>
+                    <div class="chat-bubble received">Hello! I'm your Attendify assistant. Ask me anything about attendance, courses, or campus!</div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent p-3">
+                <div class="input-group">
+                    <input type="text" id="aiMessage" class="form-control" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter')sendMessage()" style="border-radius: 25px 0 0 25px;">
+                    <button class="btn btn-primary" onclick="sendMessage()" style="border-radius: 0 25px 25px 0; padding: 0 20px;">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendMessage() {
+    let msg = document.getElementById('aiMessage').value;
+    if (!msg.trim()) return;
+    
+    let box = document.getElementById('aiChatBox');
+    
+    // Show user message
+    box.innerHTML += `<div class="d-flex gap-3 mb-3 justify-content-end">
+        <div class="chat-bubble sent">${msg}</div>
+        <div class="avatar bg-success">You</div>
+    </div>`;
+    
+    document.getElementById('aiMessage').value = '';
+    box.scrollTop = box.scrollHeight;
+    
+    // Show loading
+    box.innerHTML += `<div class="d-flex gap-3 mb-3" id="loading">
+        <div class="avatar bg-primary">AI</div>
+        <div class="chat-bubble received">Thinking...</div>
+    </div>`;
+    
+    // Send ONLY the new message
+    fetch('{{ url_for("chatbot_page") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'message=' + encodeURIComponent(msg)
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('loading').remove();
+        box.innerHTML += `<div class="d-flex gap-3 mb-3">
+            <div class="avatar bg-primary">AI</div>
+            <div class="chat-bubble received">${data.reply}</div>
+        </div>`;
+        box.scrollTop = box.scrollHeight;
+    });
+}
+</script>
+{% endblock %}
