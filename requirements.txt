@@ -1,4 +1,4 @@
-flask 
-flask-mail 
-werkzeug 
-google-genai 
+flask
+flask-mail
+werkzeug
+google-genai
