@@ -1,25 +1,19 @@
-import os
-from dotenv import load_dotenv
-from google import genai
+import google.generativeai as genai
 
-# Load API key from .env file
-load_dotenv()
-API_KEY = os.getenv('GOOGLE_API_KEY')
-
-client = genai.Client(api_key=API_KEY)
+MODEL_NAME = "gemini-2.5-flash"   # or fallback to "gemini-1.5-flash"
 
 def get_bot_response(message):
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=f"""You are Attendify AI assistant for a college attendance management system. 
+        model = genai.GenerativeModel(MODEL_NAME)
+        response = model.generate_content(
+            f"""You are Attendify AI assistant for a college attendance management system.
 Students use this platform to track their attendance in courses like DBMS, OS, AI, DAA, MPMC, Statistics, and Soft Skills.
 The minimum attendance requirement is 75%. Students must maintain this to appear in exams.
 Professors can mark attendance, manage courses, and resolve disputes.
 Answer in 2-4 short sentences. Be direct and helpful.
 
 User: {message}""",
-            config={
+            generation_config={
                 "temperature": 0.3,
                 "max_output_tokens": 200
             }

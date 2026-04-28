@@ -11,6 +11,18 @@ from utils.helpers import generate_class_instances
 from create_tables import init_db
 import os
 
+def load_env_file():
+    try:
+        with open('.env', 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    os.environ[key] = value
+    except FileNotFoundError:
+        pass
+
+load_env_file()
 
 app = Flask(__name__)
 app.config.from_object(Config)
