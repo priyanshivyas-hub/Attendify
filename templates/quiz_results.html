@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results{% endblock %}
+{% block page_title %}Results: {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Student</th><th>Email</th><th>Score</th><th>Out of</th><th>Percentage</th><th>Submitted</th></tr>
+            </thead>
+            <tbody>
+                {% for attempt in attempts %}
+                <tr>
+                    <td>{{ attempt.full_name }}</td>
+                    <td>{{ attempt.email }}</td>
+                    <td>{{ attempt.score }}</td>
+                    <td>{{ attempt.total_marks }}</td>
+                    <td>{{ (attempt.score / attempt.total_marks * 100) | round(1) }}%</td>
+                    <td>{{ attempt.end_time }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

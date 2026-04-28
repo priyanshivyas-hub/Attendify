@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Active Quizzes{% endblock %}
+{% block page_title %}Active Quizzes{% endblock %}
+
+{% block content %}
+{% if quizzes %}
+    <div class="row">
+        {% for quiz in quizzes %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header text-white" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+                    <h5 class="mb-0">{{ quiz.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Course:</strong> {{ quiz.course_name }}</p>
+                    <p><strong>Type:</strong> {{ quiz.quiz_type | title }}</p>
+                    <p><strong>Time:</strong> {{ quiz.start_time }} – {{ quiz.end_time }}</p>
+                    {% if quiz.time_limit %}
+                    <p><strong>Duration:</strong> {{ quiz.time_limit }} mins</p>
+                    {% endif %}
+                    <p><strong>Marks:</strong> {{ quiz.total_marks }}</p>
+                    {% if quiz.submitted %}
+                        <span class="badge bg-success">Submitted</span>
+                    {% else %}
+                        <a href="{{ url_for('take_quiz', quiz_id=quiz.quiz_id) }}" class="btn btn-primary" style="background:#7c3aed; border:none;">
+                            Start Quiz
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-clipboard-list fa-3x" style="color:#c4b5fd;"></i>
+        <h4 class="mt-3">No active quizzes right now</h4>
+    </div>
+{% endif %}
+{% endblock %}

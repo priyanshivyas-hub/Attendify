@@ -10,6 +10,27 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
         {% block extra_css %}{% endblock %}
     <style>
+        /* ===== PURPLE THEME ===== */
+.bg-purple {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+    color: white !important;
+}
+.btn-purple {
+    background: #7c3aed;
+    color: white;
+    border: none;
+}
+.btn-purple:hover {
+    background: #6d28d9;
+    color: white;
+}
+.badge-purple {
+    background: #7c3aed;
+    color: white;
+}
+.progress-bar-purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+}
         /* Dark Mode Overrides */
         [data-theme="dark"] .topbar {
             background: #1e293b !important;
@@ -145,6 +166,7 @@
     <a href="{{ url_for('view_professor_locations') }}" class="nav-item"><i class="fas fa-map-marker-alt nav-icon"></i> Find Professors</a>
     <a href="{{ url_for('message_list') }}" class="nav-item"><i class="fas fa-comments nav-icon"></i> Messages</a>
     <a href="{{ url_for('chatbot_page') }}" class="nav-item"><i class="fas fa-robot nav-icon"></i> AI Assistant</a>
+    <a href="/quiz/active" class="nav-item"><i class="fas fa-clipboard-list nav-icon"></i> Quizzes</a>
     <a href="{{ url_for('navigation') }}" class="nav-item"><i class="fas fa-compass nav-icon"></i> Campus Map</a>
     <a href="{{ url_for('report_issue') }}" class="nav-item"><i class="fas fa-flag nav-icon"></i> Report Issue</a>
 </div>
@@ -158,6 +180,7 @@
     <a href="{{ url_for('view_disputes') }}" class="nav-item"><i class="fas fa-gavel nav-icon"></i> Disputes</a>
     <a href="{{ url_for('list_issues') }}" class="nav-item"><i class="fas fa-tasks nav-icon"></i> All Issues</a>
     <a href="{{ url_for('analytics_dashboard') }}" class="nav-item"><i class="fas fa-chart-line nav-icon"></i> Analytics</a>
+    <a href="{{ url_for('manage_quizzes') }}" class="nav-item"><i class="fas fa-clipboard-list nav-icon"></i> Quizzes</a>
     <a href="{{ url_for('message_list') }}" class="nav-item"><i class="fas fa-comments nav-icon"></i> Messages</a>
 </div>
 {% endif %}
@@ -186,19 +209,18 @@
     
     <div class="main-content">
         <header class="topbar">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <button class="btn" onclick="toggleSidebar()" style="padding:8px;display:none;" id="menuBtn">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h2 class="page-title">{% block page_title %}Dashboard{% endblock %}</h2>
-            </div>
-            <div style="display:flex;align-items:center;gap:16px;">
-                <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-                <span style="font-weight:600;">{{ session.full_name }}</span>
-                <span class="badge" style="background:#e0e7ff;color:#4338ca;">{{ session.role|title }}</span>
-            </div>
-        </header>
-        
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button class="theme-toggle" onclick="toggleSidebar()" id="menuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h2 class="page-title">{% block page_title %}Dashboard{% endblock %}</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+        <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+        <span style="font-weight:600;">{{ session.full_name }}</span>
+        <span class="badge" style="background:#e0e7ff;color:#4338ca;">{{ session.role|title }}</span>
+    </div>
+</header>
         <main class="content">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}

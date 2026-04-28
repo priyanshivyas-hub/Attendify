@@ -2,42 +2,100 @@
 {% block title %}Professor Dashboard{% endblock %}
 {% block page_title %}My Courses{% endblock %}
 
+{% block extra_css %}
+<style>
+    .class-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #7c3aed;
+    }
+    .class-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(124,58,237,0.15);
+    }
+    .class-card.cancelled {
+        border-left-color: #ef4444;
+        opacity: 0.8;
+    }
+    .stat-box {
+        border-left: 4px solid #7c3aed;
+        background: white;
+        border-radius: 12px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .btn-purple {
+        background: #7c3aed;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-purple:hover {
+        background: #6d28d9;
+        box-shadow: 0 4px 12px rgba(124,58,237,0.3);
+    }
+    .progress-bar-purple {
+        background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Stats Row -->
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-book-open"></i></div>
-                <div class="stat-value">{{ course_summary|length }}</div>
-                <div class="stat-label">Total Courses</div>
+        <div class="stat-box">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Total Courses</div>
+                    <div style="font-size:28px;font-weight:800;color:#1e1b4b;">{{ course_summary|length }}</div>
+                </div>
+                <div style="width:48px;height:48px;border-radius:12px;background:#ede9fe;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-book-open" style="color:#7c3aed;font-size:20px;"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="fas fa-calendar-check"></i></div>
-                <div class="stat-value">{{ today_classes|length }}</div>
-                <div class="stat-label">Today's Classes</div>
+        <div class="stat-box" style="border-left-color:#7c3aed;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Today's Classes</div>
+                    <div style="font-size:28px;font-weight:800;color:#1e1b4b;">{{ today_classes|length }}</div>
+                </div>
+                <div style="width:48px;height:48px;border-radius:12px;background:#ede9fe;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-calendar-check" style="color:#7c3aed;font-size:20px;"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-gavel"></i></div>
-                <div class="stat-value">{{ pending_count }}</div>
-                <div class="stat-label">Pending Disputes</div>
+        <div class="stat-box" style="border-left-color:#7c3aed;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Pending Disputes</div>
+                    <div style="font-size:28px;font-weight:800;color:#1e1b4b;">{{ pending_count }}</div>
+                </div>
+                <div style="width:48px;height:48px;border-radius:12px;background:#ede9fe;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-gavel" style="color:#7c3aed;font-size:20px;"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="stat-icon bg-info bg-opacity-10 text-info"><i class="fas fa-clock"></i></div>
-                <div class="stat-value">{{ upcoming_classes|length }}</div>
-                <div class="stat-label">Upcoming (7 days)</div>
+        <div class="stat-box" style="border-left-color:#7c3aed;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Upcoming (7 days)</div>
+                    <div style="font-size:28px;font-weight:800;color:#1e1b4b;">{{ upcoming_classes|length + cancelled_upcoming|length }}</div>
+                </div>
+                <div style="width:48px;height:48px;border-radius:12px;background:#ede9fe;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-clock" style="color:#7c3aed;font-size:20px;"></i>
+                </div>
             </div>
         </div>
     </div>
@@ -47,59 +105,99 @@
     <!-- Today's Classes -->
     <div class="col-lg-8 mb-4">
         <div class="card">
-            <div class="card-header d-flex justify-content-between">
+            <div class="card-header d-flex justify-content-between" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border-radius:14px 14px 0 0;">
                 <h5 class="mb-0">📅 Today's Schedule</h5>
-                <a href="{{ url_for('send_attendance_report') }}" class="btn btn-sm btn-success" onclick="event.preventDefault(); document.getElementById('reportForm').submit();">
-                    <i class="fas fa-paper-plane me-1"></i> Send Report
-                </a>
-                <form id="reportForm" method="POST" action="{{ url_for('send_attendance_report') }}" style="display:none;"></form>
+                <form method="POST" action="{{ url_for('send_attendance_report') }}" style="display:inline;">
+                    <button type="submit" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-paper-plane me-1"></i> Send Report
+                    </button>
+                </form>
             </div>
             <div class="card-body">
                 {% if today_classes %}
                     {% for class in today_classes %}
-                    <div class="card border mb-3">
+                    <div class="class-card card mb-3">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6>{{ class.course_code }} - {{ class.course_name }}</h6>
-                                    <small class="text-secondary">{{ class.start_time }} - {{ class.end_time }} | Room {{ class.room }}</small>
+                                    <h6 class="mb-1">{{ class.course_code }} - {{ class.course_name }}</h6>
+                                    <small style="color:#6b7280;">🕐 {{ class.start_time }} - {{ class.end_time }} | 🏫 Room {{ class.room }}</small>
                                     <div class="mt-2">
-                                        <span class="badge bg-success me-1">P: {{ class.present or 0 }}</span>
-                                        <span class="badge bg-danger me-1">A: {{ class.absent or 0 }}</span>
-                                        <span class="badge bg-warning me-1">L: {{ class.late or 0 }}</span>
-                                        <span class="badge bg-info">Total: {{ class.total_students or 0 }}</span>
+                                        <span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">P: {{ class.present or 0 }}</span>
+                                        <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">A: {{ class.absent or 0 }}</span>
+                                        <span style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">L: {{ class.late or 0 }}</span>
+                                        <span style="background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">👥 {{ class.total_students or 0 }}</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <a href="{{ url_for('class_attendance', instance_id=class.instance_id) }}" class="btn btn-primary btn-sm">
+                                <div class="d-flex flex-column gap-2">
+                                    <a href="{{ url_for('class_attendance', instance_id=class.instance_id) }}" class="btn-purple">
                                         <i class="fas fa-clipboard-check me-1"></i> Mark
                                     </a>
+                                    <form method="POST" action="{{ url_for('cancel_class', instance_id=class.instance_id) }}" onsubmit="return confirm('Cancel this class?')">
+                                        <input type="text" name="reason" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;width:130px;margin-bottom:4px;" placeholder="Reason" required>
+                                        <button type="submit" style="background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;width:100%;">
+                                            <i class="fas fa-times me-1"></i> Cancel
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-secondary text-center py-3">No classes scheduled today</p>
+                    <div class="text-center py-4" style="color:#6b7280;">
+                        <i class="fas fa-coffee fa-2x mb-2" style="color:#c4b5fd;"></i>
+                        <p>No classes scheduled today</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
+        
+        <!-- Cancelled Today -->
+        {% if cancelled_today %}
+        <div class="card mt-3" style="border:2px solid #ef4444;">
+            <div class="card-header" style="background:#ef4444;color:white;border-radius:12px 12px 0 0;"><h5 class="mb-0">❌ Cancelled Today</h5></div>
+            <div class="card-body">
+                {% for class in cancelled_today %}
+                <div class="class-card cancelled card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ class.course_code }}</strong> - {{ class.course_name }}<br>
+                                <small style="color:#6b7280;">{{ class.start_time }} - {{ class.end_time }}</small><br>
+                                <small style="color:#ef4444;">Reason: {{ class.cancellation_reason or 'Not specified' }}</small>
+                            </div>
+                            <form method="POST" action="{{ url_for('restore_class', instance_id=class.instance_id) }}">
+                                <button type="submit" style="background:#f59e0b;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;">
+                                    <i class="fas fa-undo me-1"></i> Restore
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Course Summary -->
     <div class="col-lg-4 mb-4">
         <div class="card">
-            <div class="card-header"><h5 class="mb-0">📊 Course Progress</h5></div>
+            <div class="card-header d-flex justify-content-between" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border-radius:14px 14px 0 0;">
+                <h5 class="mb-0">📊 Course Progress</h5>
+                <a href="{{ url_for('manage_courses') }}" style="background:rgba(255,255,255,0.2);color:white;padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">Manage</a>
+            </div>
             <div class="card-body">
                 {% for cs in course_summary %}
                 <div class="mb-3">
                     <div class="d-flex justify-content-between small mb-1">
                         <strong>{{ cs.course_code }}</strong>
-                        <span>{{ cs.held_so_far or 0 }}/{{ cs.total_lectures or 0 }}</span>
+                        <span style="color:#6b7280;">{{ cs.held_so_far or 0 }}/{{ cs.total_lectures or 0 }}</span>
                     </div>
-                    <div class="progress" style="height: 6px;">
+                    <div class="progress" style="height:6px;background:#e5e7eb;">
                         {% set pct = ((cs.held_so_far or 0) / (cs.total_lectures or 1) * 100) | round %}
-                        <div class="progress-bar bg-primary" style="width: {{ pct }}%"></div>
+                        <div class="progress-bar progress-bar-purple" data-width="{{ pct }}"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -107,4 +205,74 @@
         </div>
     </div>
 </div>
+
+<!-- Upcoming Classes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border-radius:14px 14px 0 0;">
+                <h5 class="mb-0">📅 Upcoming (Next 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_classes %}
+                    {% for class in upcoming_classes %}
+                    <div class="class-card card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ class.course_code }} - {{ class.course_name }}</h6>
+                                    <small style="color:#6b7280;">📅 {{ class.class_date }} | 🕐 {{ class.start_time }} | 🏫 Room {{ class.room }}</small>
+                                </div>
+                                <form method="POST" action="{{ url_for('cancel_class', instance_id=class.instance_id) }}" class="d-flex gap-2">
+                                    <input type="text" name="reason" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;width:130px;" placeholder="Reason" required>
+                                    <button type="submit" style="background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;" onclick="return confirm('Cancel?')">
+                                        <i class="fas fa-times me-1"></i> Cancel
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4" style="color:#6b7280;">
+                        <i class="fas fa-calendar fa-2x mb-2" style="color:#c4b5fd;"></i>
+                        <p>No upcoming classes</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancelled Upcoming -->
+{% if cancelled_upcoming %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" style="border:2px solid #ef4444;">
+            <div class="card-header" style="background:#ef4444;color:white;border-radius:12px 12px 0 0;"><h5 class="mb-0">❌ Cancelled Upcoming</h5></div>
+            <div class="card-body">
+                {% for class in cancelled_upcoming %}
+                <div class="class-card cancelled card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ class.course_code }}</strong> - {{ class.course_name }}<br>
+                                <small style="color:#6b7280;">📅 {{ class.class_date }} | 🕐 {{ class.start_time }}</small><br>
+                                <small style="color:#ef4444;">Reason: {{ class.cancellation_reason or 'Not specified' }}</small>
+                            </div>
+                            <form method="POST" action="{{ url_for('restore_class', instance_id=class.instance_id) }}">
+                                <button type="submit" style="background:#f59e0b;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;">
+                                    <i class="fas fa-undo me-1"></i> Restore
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

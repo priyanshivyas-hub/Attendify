@@ -8,6 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from database import get_db_connection, fetchone_dict, fetchall_dict
 from utils.helpers import generate_class_instances
+from create_tables import init_db
+import os
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -269,7 +272,7 @@ def student_dashboard():
         WHERE d.student_id = ? AND d.status = 'pending'
     """, (user_id,))
     disputes = fetchall_dict(cursor)
-
+    
     # Holidays
     cursor.execute("SELECT * FROM holidays WHERE holiday_date >= DATE('now') LIMIT 5")
     holidays = fetchall_dict(cursor)
@@ -348,12 +351,10 @@ def professor_dashboard():
     """, (today_weekday, professor_id))
     today_classes = fetchall_dict(cursor)
 
-    # Upcoming classes
+    # Upcoming classes (non‑cancelled)
     cursor.execute("""
         SELECT ci.instance_id, c.course_code, c.course_name, s.start_time, s.room,
-               ci.class_date, CASE CAST(strftime('%w', ci.class_date) AS INTEGER)
-               WHEN 0 THEN 'Sun' WHEN 1 THEN 'Mon' WHEN 2 THEN 'Tue' WHEN 3 THEN 'Wed'
-               WHEN 4 THEN 'Thu' WHEN 5 THEN 'Fri' WHEN 6 THEN 'Sat' END AS day_name
+               ci.class_date
         FROM class_instances ci
         JOIN schedule s ON ci.schedule_id = s.schedule_id
         JOIN courses c ON s.course_id = c.course_id
@@ -362,6 +363,33 @@ def professor_dashboard():
         ORDER BY ci.class_date
     """, (professor_id,))
     upcoming_classes = fetchall_dict(cursor)
+
+    # ========== INSERTED CANCELLED CLASSES QUERIES ==========
+    # Cancelled classes TODAY
+    cursor.execute("""
+        SELECT ci.instance_id, c.course_code, c.course_name, s.start_time, s.end_time, s.room,
+               ci.cancellation_reason
+        FROM class_instances ci
+        JOIN schedule s ON ci.schedule_id = s.schedule_id
+        JOIN courses c ON s.course_id = c.course_id
+        WHERE ci.class_date = DATE('now') AND c.professor_id = ? AND ci.status = 'cancelled'
+        ORDER BY s.start_time
+    """, (professor_id,))
+    cancelled_today = fetchall_dict(cursor)
+
+    # Cancelled UPCOMING classes (next 7 days)
+    cursor.execute("""
+        SELECT ci.instance_id, c.course_code, c.course_name, s.start_time, s.room, ci.class_date,
+               ci.cancellation_reason
+        FROM class_instances ci
+        JOIN schedule s ON ci.schedule_id = s.schedule_id
+        JOIN courses c ON s.course_id = c.course_id
+        WHERE ci.class_date > DATE('now') AND ci.class_date <= DATE('now', '+7 days')
+        AND c.professor_id = ? AND ci.status = 'cancelled'
+        ORDER BY ci.class_date
+    """, (professor_id,))
+    cancelled_upcoming = fetchall_dict(cursor)
+    # ========================================================
 
     # Course summary
     cursor.execute("""
@@ -389,34 +417,6 @@ def professor_dashboard():
     row = fetchone_dict(cursor)
     pending_count = row['count'] if row else 0
 
-    # Cancelled today
-    cursor.execute("""
-        SELECT ci.instance_id, c.course_code, c.course_name, s.start_time, s.end_time, s.room,
-               ci.cancellation_reason
-        FROM class_instances ci
-        JOIN schedule s ON ci.schedule_id = s.schedule_id
-        JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.class_date = DATE('now') AND c.professor_id = ? AND ci.status = 'cancelled'
-        ORDER BY s.start_time
-    """, (professor_id,))
-    cancelled_today = fetchall_dict(cursor)
-
-    # Cancelled upcoming
-    cursor.execute("""
-        SELECT ci.instance_id, c.course_code, c.course_name, s.start_time, s.room,
-               ci.class_date, CASE CAST(strftime('%w', ci.class_date) AS INTEGER)
-               WHEN 0 THEN 'Sun' WHEN 1 THEN 'Mon' WHEN 2 THEN 'Tue' WHEN 3 THEN 'Wed'
-               WHEN 4 THEN 'Thu' WHEN 5 THEN 'Fri' WHEN 6 THEN 'Sat' END AS day_name,
-               ci.cancellation_reason
-        FROM class_instances ci
-        JOIN schedule s ON ci.schedule_id = s.schedule_id
-        JOIN courses c ON s.course_id = c.course_id
-        WHERE ci.class_date > DATE('now') AND ci.class_date <= DATE('now', '+7 days')
-        AND c.professor_id = ? AND ci.status = 'cancelled'
-        ORDER BY ci.class_date
-    """, (professor_id,))
-    cancelled_upcoming = fetchall_dict(cursor)
-
     cursor.close()
     conn.close()
 
@@ -427,7 +427,6 @@ def professor_dashboard():
                            pending_count=pending_count,
                            cancelled_today=cancelled_today,
                            cancelled_upcoming=cancelled_upcoming)
-
 
 @app.route('/professor/class/<int:instance_id>/cancel', methods=['POST'])
 @login_required
@@ -479,6 +478,11 @@ def class_attendance(instance_id):
         WHERE ci.instance_id = ?
     """, (instance_id,))
     class_info = fetchone_dict(cursor)
+    
+    if not class_info:
+        flash("Class not found", "danger")
+        return redirect(url_for('professor_dashboard'))
+    
     cursor.execute("""
         SELECT u.user_id, u.full_name, u.email, a.status AS attendance_status
         FROM enrollments e
@@ -487,8 +491,10 @@ def class_attendance(instance_id):
         JOIN class_instances ci ON ci.schedule_id = s.schedule_id
         LEFT JOIN attendance a ON a.student_id = u.user_id AND a.instance_id = ci.instance_id
         WHERE ci.instance_id = ?
+        ORDER BY u.full_name
     """, (instance_id,))
     students = fetchall_dict(cursor)
+    
     cursor.execute("""
         SELECT
             SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) AS present_count,
@@ -499,12 +505,12 @@ def class_attendance(instance_id):
         FROM attendance WHERE instance_id = ?
     """, (instance_id,))
     counts = fetchone_dict(cursor)
-    if not counts:
+    if not counts or counts['total_marked'] == 0:
         counts = {"present_count":0,"absent_count":0,"late_count":0,"excused_count":0,"total_marked":0}
+    
     cursor.close()
     conn.close()
     return render_template("class_attendance.html", class_info=class_info, students=students, counts=counts)
-
 
 @app.route('/professor/class/<int:instance_id>/attendance', methods=['POST'])
 @login_required
@@ -862,6 +868,66 @@ def course_students(course_id):
     
     return render_template('course_students.html', course=course, students=students)
 
+@app.route('/professor/course/<int:course_id>/mark-attendance', methods=['GET', 'POST'])
+@login_required
+@role_required('professor')
+def mark_course_attendance(course_id):
+    professor_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Get today's class instance for this course
+    cursor.execute("""
+        SELECT ci.instance_id, c.course_code, c.course_name
+        FROM class_instances ci
+        JOIN schedule s ON ci.schedule_id = s.schedule_id
+        JOIN courses c ON s.course_id = c.course_id
+        WHERE c.course_id = ? AND c.professor_id = ? AND ci.class_date = DATE('now')
+    """, (course_id, professor_id))
+    class_info = fetchone_dict(cursor)
+    
+    if not class_info:
+        cursor.close()
+        conn.close()
+        flash('No class scheduled today for this course', 'warning')
+        return redirect(url_for('manage_courses'))
+    
+    if request.method == 'POST':
+        for key, value in request.form.items():
+            if key.startswith('student_'):
+                student_id = key.replace('student_', '')
+                status = value
+                cursor.execute("SELECT attendance_id FROM attendance WHERE instance_id = ? AND student_id = ?",
+                               (class_info['instance_id'], student_id))
+                existing = fetchone_dict(cursor)
+                if existing:
+                    cursor.execute("UPDATE attendance SET status = ?, marked_by = ? WHERE instance_id = ? AND student_id = ?",
+                                   (status, professor_id, class_info['instance_id'], student_id))
+                else:
+                    cursor.execute("INSERT INTO attendance (instance_id, student_id, status, marked_by) VALUES (?,?,?,?)",
+                                   (class_info['instance_id'], student_id, status, professor_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Attendance saved!', 'success')
+        return redirect(url_for('manage_courses'))
+    
+    # GET: Show student list with current status
+    cursor.execute("""
+        SELECT u.user_id, u.full_name, u.email,
+               a.status as current_status
+        FROM users u
+        JOIN enrollments e ON u.user_id = e.student_id
+        LEFT JOIN attendance a ON a.instance_id = ? AND a.student_id = u.user_id
+        WHERE e.course_id = ?
+        ORDER BY u.full_name
+    """, (class_info['instance_id'], course_id))
+    students = fetchall_dict(cursor)
+    cursor.close()
+    conn.close()
+    
+    return render_template('mark_attendance.html', class_info=class_info, students=students)
+
 
 @app.route('/professor/course/<int:course_id>/send-count', methods=['POST'])
 @login_required
@@ -918,73 +984,7 @@ def send_class_count(course_id):
     return redirect(url_for('manage_courses'))
 
 
-@app.route('/professor/course/<int:course_id>/mark-attendance', methods=['GET', 'POST'])
-@login_required
-@role_required('professor')
-def mark_course_attendance(course_id):
-    """Mark attendance for all students in a course"""
-    professor_id = session['user_id']
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Get today's class instance
-    today_weekday = datetime.now().strftime('%a')
-    cursor.execute("""
-        SELECT ci.instance_id, c.course_code, c.course_name
-        FROM class_instances ci
-        JOIN schedule s ON ci.schedule_id = s.schedule_id
-        JOIN courses c ON s.course_id = c.course_id
-        WHERE c.course_id = ? AND c.professor_id = ? AND ci.class_date = DATE('now')
-    """, (course_id, professor_id))
-    
-    class_info = fetchone_dict(cursor)
-    
-    if not class_info:
-        cursor.close()
-        conn.close()
-        flash('No class scheduled today for this course', 'warning')
-        return redirect(url_for('manage_courses'))
-    
-    if request.method == 'POST':
-        # Save attendance
-        for key, value in request.form.items():
-            if key.startswith('student_'):
-                student_id = key.replace('student_', '')
-                status = value
-                
-                cursor.execute("SELECT attendance_id FROM attendance WHERE instance_id = ? AND student_id = ?",
-                              (class_info['instance_id'], student_id))
-                existing = fetchone_dict(cursor)
-                
-                if existing:
-                    cursor.execute("UPDATE attendance SET status = ?, marked_by = ? WHERE instance_id = ? AND student_id = ?",
-                                  (status, professor_id, class_info['instance_id'], student_id))
-                else:
-                    cursor.execute("INSERT INTO attendance (instance_id, student_id, status, marked_by) VALUES (?,?,?,?)",
-                                  (class_info['instance_id'], student_id, status, professor_id))
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        flash('Attendance saved successfully!', 'success')
-        return redirect(url_for('manage_courses'))
-    
-    # Get students
-    cursor.execute("""
-        SELECT u.user_id, u.full_name, u.email,
-               a.status as current_status
-        FROM users u
-        JOIN enrollments e ON u.user_id = e.student_id
-        LEFT JOIN attendance a ON a.instance_id = ? AND a.student_id = u.user_id
-        WHERE e.course_id = ?
-        ORDER BY u.full_name
-    """, (class_info['instance_id'], course_id))
-    students = fetchall_dict(cursor)
-    cursor.close()
-    conn.close()
-    
-    return render_template('mark_attendance.html', class_info=class_info, students=students) 
-
+   
 # ==================== ADMIN ROUTES ====================
 @app.route('/admin/dashboard')
 @login_required
@@ -1055,11 +1055,12 @@ def generate_random_attendance():
 def professor_activity():
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     cursor.execute("""
         SELECT u.user_id, u.full_name,
                COUNT(DISTINCT ci.instance_id) AS total_classes,
-               COUNT(DISTINCT CASE WHEN a.attendance_id IS NOT NULL THEN ci.instance_id END) AS marked_count
+               COUNT(DISTINCT CASE WHEN a.attendance_id IS NOT NULL THEN ci.instance_id END) AS marked_count,
+               ROUND(CAST(COUNT(DISTINCT CASE WHEN a.attendance_id IS NOT NULL THEN ci.instance_id END) AS FLOAT) /
+                     NULLIF(COUNT(DISTINCT ci.instance_id), 0) * 100, 1) AS completion_percentage
         FROM users u
         LEFT JOIN courses c ON u.user_id = c.professor_id
         LEFT JOIN schedule s ON c.course_id = s.course_id
@@ -1069,22 +1070,19 @@ def professor_activity():
         GROUP BY u.user_id, u.full_name
         ORDER BY u.full_name
     """)
-    
-    # Fetch results properly
-    professors = cursor.fetchall()
-    # Convert to list of dicts
-    professors_list = []
-    for row in professors:
-        professors_list.append({
+    professors = []
+    for row in cursor.fetchall():
+        professors.append({
             'user_id': row[0],
             'full_name': row[1],
             'total_classes': row[2] or 0,
-            'marked_count': row[3] or 0
+            'marked_count': row[3] or 0,
+            'completion_percentage': row[4] if row[4] is not None else 0
         })
-    
     cursor.close()
     conn.close()
-    return render_template('professor_activity.html', professors=professors_list)
+    return render_template('professor_activity.html', professors=professors)
+
 
 @app.route('/professor/send_report', methods=['POST'])
 @login_required
@@ -1278,6 +1276,7 @@ def navigation():
 # ==================== AI CHATBOT ====================
 import chatbot
 
+
 @app.route('/chatbot', methods=['GET', 'POST'])
 @login_required
 def chatbot_page():
@@ -1398,7 +1397,6 @@ def issue_detail(issue_id):
     conn.close()
     
     return render_template('issue_detail.html', issue=issue, role=role)
-
 
 # ==================== FACE RECOGNITION ====================
 import base64
@@ -1724,7 +1722,229 @@ def special_days():
     conn.close()
     
     return render_template("admin_special_days.html", days=days, special_days=special_days)
+
+# ==================== QUIZ ROUTES (Working, No AI) ====================
+
+BUILTIN_QUESTIONS = [
+    {
+        "question": "What does DBMS stand for?",
+        "type": "mcq",
+        "options": {"A":"Database Management System","B":"Data Backup Management Software","C":"Double Byte Management System","D":"None"},
+        "correct":"A","marks":1
+    },
+    {
+        "question": "Which is an operating system?",
+        "type": "mcq",
+        "options": {"A":"Python","B":"Linux","C":"MySQL","D":"HTML"},
+        "correct":"B","marks":1
+    },
+    {
+        "question": "Explain normalization in databases.",
+        "type":"short_answer",
+        "correct":"normalization reduces redundancy",
+        "marks":3
+    }
+]
+
+@app.route('/quiz/create', methods=['GET','POST'])
+@login_required
+@role_required('professor','admin')
+def create_quiz():
+    if request.method == 'POST':
+        course_id = request.form.get('course_id')
+        title = request.form.get('title')
+        description = request.form.get('description','')
+        quiz_type = request.form.get('quiz_type','mcq')
+        time_limit = request.form.get('time_limit', type=int) or None
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
+        total_marks = request.form.get('total_marks',0, type=int)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO quizzes (course_id, title, description, quiz_type, time_limit, start_time, end_time, total_marks, created_by, ai_generated)
+            VALUES (?,?,?,?,?,?,?,?,?,0)
+        """, (course_id, title, description, quiz_type, time_limit, start_time, end_time, total_marks, session['user_id']))
+        quiz_id = cursor.lastrowid
+
+        # Add matching questions from built‑in bank
+        for q in BUILTIN_QUESTIONS:
+            if quiz_type == 'mcq' and q['type'] != 'mcq': continue
+            if quiz_type == 'short_answer' and q['type'] != 'short_answer': continue
+            if q['type'] == 'mcq':
+                cursor.execute("""
+                    INSERT INTO quiz_questions (quiz_id, question_text, question_type, option_a, option_b, option_c, option_d, correct_answer, marks, ai_generated)
+                    VALUES (?,?,?,?,?,?,?,?,?,0)
+                """, (quiz_id, q['question'], q['type'], q['options']['A'], q['options']['B'], q['options']['C'], q['options']['D'], q['correct'], q['marks']))
+            else:
+                cursor.execute("""
+                    INSERT INTO quiz_questions (quiz_id, question_text, question_type, correct_answer, marks, ai_generated)
+                    VALUES (?,?,?,?,?,0)
+                """, (quiz_id, q['question'], q['type'], q['correct'], q['marks']))
+        conn.commit()
+        cursor.close(); conn.close()
+        flash('Quiz created with questions!','success')
+        return redirect(url_for('manage_quizzes'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if session['role'] == 'admin':
+        cursor.execute("SELECT course_id, course_name, course_code FROM courses")
+    else:
+        cursor.execute("SELECT course_id, course_name, course_code FROM courses WHERE professor_id=?", (session['user_id'],))
+    courses = fetchall_dict(cursor)
+    cursor.close(); conn.close()
+    return render_template('create_quiz.html', courses=courses)
+
+
+@app.route('/quiz/manage')
+@login_required
+@role_required('professor','admin')
+def manage_quizzes():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if session['role'] == 'admin':
+        cursor.execute("SELECT * FROM quizzes ORDER BY created_at DESC")
+    else:
+        cursor.execute("SELECT * FROM quizzes WHERE created_by=? ORDER BY created_at DESC", (session['user_id'],))
+    quizzes = fetchall_dict(cursor)
+    for quiz in quizzes:
+        cursor.execute("SELECT COUNT(*) as cnt FROM quiz_attempts WHERE quiz_id=?", (quiz['quiz_id'],))
+        quiz['attempts'] = cursor.fetchone()['cnt']
+    cursor.close(); conn.close()
+    return render_template('manage_quizzes.html', quizzes=quizzes)
+
+
+@app.route('/quiz/results/<int:quiz_id>')
+@login_required
+@role_required('professor','admin')
+def quiz_results(quiz_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,))
+    quiz = fetchone_dict(cursor)
+    if not quiz: return "Quiz not found", 404
+    cursor.execute("""
+        SELECT a.*, u.full_name, u.email
+        FROM quiz_attempts a
+        JOIN users u ON a.student_id = u.user_id
+        WHERE a.quiz_id=? AND a.end_time IS NOT NULL
+        ORDER BY a.score DESC
+    """, (quiz_id,))
+    attempts = fetchall_dict(cursor)
+    cursor.close(); conn.close()
+    return render_template('quiz_results.html', quiz=quiz, attempts=attempts)
+
+
+@app.route('/quiz/active')
+@login_required
+@role_required('student')
+def active_quizzes():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    cursor.execute("""
+        SELECT q.*, c.course_name
+        FROM quizzes q
+        JOIN courses c ON q.course_id = c.course_id
+        WHERE q.start_time <= ? AND q.end_time >= ?
+        ORDER BY q.start_time
+    """, (now, now))
+    quizzes = fetchall_dict(cursor)
+    for quiz in quizzes:
+        cursor.execute("SELECT end_time FROM quiz_attempts WHERE quiz_id=? AND student_id=? AND end_time IS NOT NULL",
+                       (quiz['quiz_id'], session['user_id']))
+        quiz['submitted'] = cursor.fetchone() is not None
+    cursor.close(); conn.close()
+    return render_template('active_quizzes.html', quizzes=quizzes)
+
+
+@app.route('/quiz/take/<int:quiz_id>', methods=['GET','POST'])
+@login_required
+@role_required('student')
+def take_quiz(quiz_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT face_id FROM user_faces WHERE user_id=? AND is_active=1", (session['user_id'],))
+    if not cursor.fetchone():
+        flash('You must register your face before taking a quiz.','danger')
+        return redirect(url_for('face_recognition_page'))
+
+    cursor.execute("SELECT end_time FROM quiz_attempts WHERE quiz_id=? AND student_id=? AND end_time IS NOT NULL",
+                   (quiz_id, session['user_id']))
+    if cursor.fetchone():
+        flash('You have already submitted this quiz.','warning')
+        return redirect(url_for('active_quizzes'))
+
+    cursor.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,))
+    quiz = fetchone_dict(cursor)
+    if not quiz: return "Quiz not found", 404
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    if now < quiz['start_time'] or now > quiz['end_time']:
+        flash('Quiz is not available at this time.','danger')
+        return redirect(url_for('active_quizzes'))
+
+    cursor.execute("SELECT start_time FROM quiz_attempts WHERE quiz_id=? AND student_id=? AND end_time IS NULL",
+                   (quiz_id, session['user_id']))
+    attempt = fetchone_dict(cursor)
+    time_left = None
+    if attempt:
+        start = datetime.strptime(attempt['start_time'], '%Y-%m-%d %H:%M:%S')
+        if quiz['time_limit']:
+            deadline = start + timedelta(minutes=quiz['time_limit'])
+            remaining = (deadline - datetime.now()).seconds // 60
+            if remaining <= 0:
+                flash('Time expired!','danger')
+                return redirect(url_for('active_quizzes'))
+            time_left = remaining
+
+    if request.method == 'POST':
+        if not attempt:
+            cursor.execute("INSERT INTO quiz_attempts (quiz_id, student_id, start_time, face_verified) VALUES (?,?,datetime('now'),1)",
+                           (quiz_id, session['user_id']))
+            attempt_id = cursor.lastrowid
+        else:
+            attempt_id = attempt['attempt_id']
+
+        total_score = 0
+        for key, value in request.form.items():
+            if key.startswith('q_'):
+                qid = key.split('_')[1]
+                student_answer = value
+                cursor.execute("SELECT * FROM quiz_questions WHERE question_id=?", (qid,))
+                q = fetchone_dict(cursor)
+                marks_obt = 0
+                is_correct = 0
+                if q['question_type'] == 'mcq':
+                    if student_answer.strip().lower() == q['correct_answer'].strip().lower():
+                        marks_obt = q['marks']; is_correct = 1
+                else:
+                    if q['correct_answer'].lower() in student_answer.lower():
+                        marks_obt = q['marks']; is_correct = 1
+                total_score += marks_obt
+                cursor.execute("""
+                    INSERT INTO quiz_answers (attempt_id, question_id, student_answer, is_correct, marks_obtained)
+                    VALUES (?,?,?,?,?)
+                """, (attempt_id, qid, student_answer, is_correct, marks_obt))
+
+        cursor.execute("UPDATE quiz_attempts SET end_time=datetime('now'), score=?, total_marks=? WHERE attempt_id=?",
+                       (total_score, quiz['total_marks'], attempt_id))
+        conn.commit()
+        cursor.close(); conn.close()
+        flash(f'Quiz submitted! You scored {total_score}/{quiz["total_marks"]}','success')
+        return redirect(url_for('active_quizzes'))
+
+    cursor.execute("SELECT * FROM quiz_questions WHERE quiz_id=? ORDER BY question_id", (quiz_id,))
+    questions = fetchall_dict(cursor)
+    cursor.close(); conn.close()
+    return render_template('take_quiz.html', quiz=quiz, questions=questions, time_left=time_left)
+
+init_db()    
 # ==================== MAIN ====================
 if __name__ == '__main__':
     initialize_total_lectures()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

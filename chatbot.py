@@ -1,6 +1,12 @@
+import os
+from dotenv import load_dotenv
 from google import genai
 
-client = genai.Client(api_key="AIzaSyD2oOAOWJBzpUlO_DlVZtYt53tPEOCrvXQ")
+# Load API key from .env file
+load_dotenv()
+API_KEY = os.getenv('GOOGLE_API_KEY')
+
+client = genai.Client(api_key=API_KEY)
 
 def get_bot_response(message):
     try:

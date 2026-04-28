@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Manage Quizzes{% endblock %}
+{% block page_title %}All Quizzes{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header text-white" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+        <h5 class="mb-0">Quizzes</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Title</th><th>Type</th><th>Start</th><th>End</th><th>Attempts</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for quiz in quizzes %}
+                <tr>
+                    <td>{{ quiz.title }}</td>
+                    <td>{{ quiz.quiz_type }}</td>
+                    <td>{{ quiz.start_time }}</td>
+                    <td>{{ quiz.end_time }}</td>
+                    <td>{{ quiz.attempts }}</td>
+                    <td>
+                        <a href="{{ url_for('quiz_results', quiz_id=quiz.quiz_id) }}" class="btn btn-sm" style="background:#ede9fe;color:#7c3aed;">Results</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
